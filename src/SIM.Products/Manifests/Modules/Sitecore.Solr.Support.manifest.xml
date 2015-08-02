@@ -1,5 +1,44 @@
 <manifest version="1.3">
   <archive>
-		<name>Sitecore Solr Support</name>
+    <name>Sitecore Solr Support</name>
+    <!-- TODO Restrict for Sitecore 8 -->
+    <install>
+      <actions>
+        <extract />
+        <!-- Disable Lucene configuration files -->
+        <!-- TODO Is there a way to dynamically replace Lucene versions with Solr versions, if available, so that this plays well with other modules? -->
+        <editfile path="/Website/App_Config/Include/Sitecore.ContentSearch.Lucene.DefaultIndexConfiguration.config" >
+          <move target="/Website/App_Config/Include/Sitecore.ContentSearch.Lucene.DefaultIndexConfiguration.config.disabled" />
+        </editfile>
+        <editfile path="/Website/App_Config/Include/Sitecore.ContentSearch.Lucene.Index.Analytics.config" >
+          <move target="/Website/App_Config/Include/Sitecore.ContentSearch.Lucene.Index.Analytics.config.disabled" />
+        </editfile>
+        <editfile path="/Website/App_Config/Include/Sitecore.ContentSearch.Lucene.Index.Core.config" >
+          <move target="/Website/App_Config/Include/Sitecore.ContentSearch.Lucene.Index.Core.config.disabled" />
+        </editfile>
+        <editfile path="/Website/App_Config/Include/Sitecore.ContentSearch.Lucene.Index.Master.config" >
+          <move target="/Website/App_Config/Include/Sitecore.ContentSearch.Lucene.Index.Master.config.disabled" />
+        </editfile>
+        <editfile path="/Website/App_Config/Include/Sitecore.ContentSearch.Lucene.Index.Web.config" >
+          <move target="/Website/App_Config/Include/Sitecore.ContentSearch.Lucene.Index.Web.config.disabled" />
+        </editfile>
+        <!-- Enable Solr configuration files -->
+        <editfile path="/Website/App_Config/Include/Sitecore.ContentSearch.Solr.DefaultIndexConfiguration.config.example" >
+          <move target="/Website/App_Config/Include/Sitecore.ContentSearch.Solr.DefaultIndexConfiguration.config" />
+        </editfile>
+        <editfile path="/Website/App_Config/Include/Sitecore.ContentSearch.Solr.Index.Analytics.config.example" >
+          <move target="/Website/App_Config/Include/Sitecore.ContentSearch.Solr.Index.Analytics.config" />
+        </editfile>
+        <editfile path="/Website/App_Config/Include/Sitecore.ContentSearch.Solr.Index.Core.config.example" >
+          <move target="/Website/App_Config/Include/Sitecore.ContentSearch.Solr.Index.Core.config" />
+        </editfile>
+        <editfile path="/Website/App_Config/Include/Sitecore.ContentSearch.Solr.Index.Master.config.example" >
+          <move target="/Website/App_Config/Include/Sitecore.ContentSearch.Solr.Index.Master.config" />
+        </editfile>
+        <editfile path="/Website/App_Config/Include/Sitecore.ContentSearch.Solr.Index.Web.config.example" >
+          <move target="/Website/App_Config/Include/Sitecore.ContentSearch.Solr.Index.Web.config" />
+        </editfile>
+      </actions>
+    </install>
   </archive>
 </manifest>
