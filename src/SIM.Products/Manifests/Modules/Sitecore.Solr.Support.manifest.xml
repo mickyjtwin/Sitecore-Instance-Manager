@@ -3,8 +3,12 @@
     <name>Sitecore Solr Support</name>
     <!-- TODO Restrict for Sitecore 8 -->
     <install>
+      <params>
+          <param name="{IOC Option}" title="Select Solr IOC configuration" defaultValue="Autofac" mode="select" options="Autofac|Castle|Ninject|StructureMap|Unity" />
+        </params>
       <actions>
         <extract />
+        
         <!-- Disable Lucene configuration files -->
         <!-- TODO Is there a way to dynamically replace Lucene versions with Solr versions, if available, so that this plays well with other modules? -->
         <editfile path="/Website/App_Config/Include/Sitecore.ContentSearch.Lucene.DefaultIndexConfiguration.config" >
