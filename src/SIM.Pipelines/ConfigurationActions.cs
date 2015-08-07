@@ -699,6 +699,9 @@
         (result, variable) => result.Replace(variable.Key, variable.Value)).Replace("{InstanceName}", instance.Name);
 
       var actions = actionsElement.ChildNodes.OfType<XmlElement>();
+      var conditionEvaluator = new ConditionEvaluator(variables);
+      actions = actions.Where(a => conditionEvaluator.ConditionIsTrueOrMissing(a));
+
       var webRootPath = instance.WebRootPath;
       List<string> ignoreCommands = new List<string>();
       foreach (XmlElement action in actions.Where(a => a.Name.EqualsIgnoreCase("patch")))
