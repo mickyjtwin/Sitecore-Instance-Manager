@@ -4,7 +4,7 @@
     <!-- TODO Restrict for Sitecore 8 -->
     <install>
       <params>
-          <param name="{IOC Option}" title="Select Solr IOC configuration" defaultValue="Autofac" mode="select" options="Autofac|Castle|Ninject|StructureMap|Unity" />
+          <param name="{IOC Option}" title="Select Solr IOC configuration" defaultValue="AutoFac" mode="select" options="AutoFac|CastleWindsor|Ninject|StructureMap|Unity" />
         </params>
       <actions>
         <extract />
@@ -53,6 +53,15 @@
                   target="&lt;param desc=&quot;core&quot;&gt;{InstanceName}_$(id)&lt;/param&gt;"/>
           <replacevariables />
           <move target="/Website/App_Config/Include/Sitecore.ContentSearch.Solr.Index.Web.config" />
+        </editfile>
+        <!-- Update Global.asax-->
+        <editfile path="/Website/Global.asax" condition="not equals" conditionArg1="{IOC Option}" conditionArg2="CastleWindsor">
+          <replace source="Sitecore.Web.Application" target="Sitecore.ContentSearch.SolrProvider.{IOC Option}Integration.{IOC Option}Appliation"/>
+          <replacevariables/>
+        </editfile>
+        <editfile path="/Website/Global.asax" condition="equals" conditionArg1="{IOC Option}" conditionArg2="CastleWindsor">
+          <replace source="Sitecore.Web.Application" target="Sitecore.ContentSearch.SolrProvider.CastleWindsorIntegration.WindsorApplication"/>
+          <replacevariables/>
         </editfile>
          
         
