@@ -53,10 +53,10 @@
     <Compile Include="Base\ExtensionsTest.cs" />
     <Compile Include="Base\FileSystemTest.cs" />
     <Compile Include="Base\ProfileSectionTest.cs" />
-    <Compile Include="Base\ConditionEvaluatorTests.cs" />
     <Compile Include="Base\XmlDocumentExTest.cs" />
     <Compile Include="Instances\VisualStudioHelperTests.cs" />
     <Compile Include="Instances\InstanceTest.cs" />
+    <Compile Include="Pipelines\ConditionEvaluatorTests.cs" />
     <Compile Include="Pipelines\PipelineManagerTest.cs" />
     <Compile Include="Pipelines\ProductTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -71,6 +71,10 @@
     <ProjectReference Include="..\SIM.Adapters\SIM.Adapters.csproj">
       <Project>{CA40C57A-EF4F-474D-BE8B-98E51AE62C1F}</Project>
       <Name>SIM.Adapters</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\SIM.Pipelines\SIM.Pipelines.csproj">
+      <Project>{7A3FEDF8-DF96-4426-AA01-C2D4FD3E68C8}</Project>
+      <Name>SIM.Pipelines</Name>
     </ProjectReference>
     <ProjectReference Include="..\SIM.Products\SIM.Products.csproj">
       <Project>{BC8B4EE5-C053-42E1-A5BA-07F8C41915A9}</Project>

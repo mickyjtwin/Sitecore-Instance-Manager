@@ -56,7 +56,6 @@
     <Compile Include="AdvancedSettingsManager.cs" />
     <Compile Include="ApplicationManager.cs" />
     <Compile Include="CacheManager.cs" />
-    <Compile Include="ConditionEvaluator.cs" />
     <Compile Include="CustomDataStoring\Bucket.cs" />
     <Compile Include="CustomDataStoring\FileSystemBucketStorage.cs" />
     <Compile Include="CustomDataStoring\IBucketStorage.cs" />

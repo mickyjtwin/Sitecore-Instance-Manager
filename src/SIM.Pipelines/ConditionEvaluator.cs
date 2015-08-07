@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Xml;
 
-namespace SIM
+namespace SIM.Pipelines
 {
     /// <summary>
     /// Used to evaluate conditions in Manifest actions, following this syntax:

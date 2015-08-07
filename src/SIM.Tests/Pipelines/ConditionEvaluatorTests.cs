@@ -1,10 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System.Collections.Generic;
 using System.Xml;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using SIM.Pipelines;
 
-namespace SIM.Tests.Base
+namespace SIM.Tests.Pipelines
 {
     [TestClass]
     public class ConditionEvaluatorTests
