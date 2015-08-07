@@ -26,22 +26,36 @@
         <editfile path="/Website/App_Config/Include/Sitecore.ContentSearch.Lucene.Index.Web.config" >
           <move target="/Website/App_Config/Include/Sitecore.ContentSearch.Lucene.Index.Web.config.disabled" />
         </editfile>
-        <!-- Enable Solr configuration files -->
+        <!-- Enable Solr configuration files, rename Core to include instance -->
         <editfile path="/Website/App_Config/Include/Sitecore.ContentSearch.Solr.DefaultIndexConfiguration.config.example" >
           <move target="/Website/App_Config/Include/Sitecore.ContentSearch.Solr.DefaultIndexConfiguration.config" />
         </editfile>
         <editfile path="/Website/App_Config/Include/Sitecore.ContentSearch.Solr.Index.Analytics.config.example" >
+          <replace source="&lt;param desc=&quot;core&quot;&gt;$(id)&lt;/param&gt;"
+                   target="&lt;param desc=&quot;core&quot;&gt;{InstanceName}_$(id)&lt;/param&gt;"/>
+          <replacevariables />
           <move target="/Website/App_Config/Include/Sitecore.ContentSearch.Solr.Index.Analytics.config" />
         </editfile>
         <editfile path="/Website/App_Config/Include/Sitecore.ContentSearch.Solr.Index.Core.config.example" >
+          <replace source="&lt;param desc=&quot;core&quot;&gt;$(id)&lt;/param&gt;"
+                  target="&lt;param desc=&quot;core&quot;&gt;{InstanceName}_$(id)&lt;/param&gt;"/>
+          <replacevariables />
           <move target="/Website/App_Config/Include/Sitecore.ContentSearch.Solr.Index.Core.config" />
         </editfile>
         <editfile path="/Website/App_Config/Include/Sitecore.ContentSearch.Solr.Index.Master.config.example" >
+          <replace source="&lt;param desc=&quot;core&quot;&gt;$(id)&lt;/param&gt;"
+                  target="&lt;param desc=&quot;core&quot;&gt;{InstanceName}_$(id)&lt;/param&gt;"/>
+          <replacevariables />
           <move target="/Website/App_Config/Include/Sitecore.ContentSearch.Solr.Index.Master.config" />
         </editfile>
         <editfile path="/Website/App_Config/Include/Sitecore.ContentSearch.Solr.Index.Web.config.example" >
+          <replace source="&lt;param desc=&quot;core&quot;&gt;$(id)&lt;/param&gt;"
+                  target="&lt;param desc=&quot;core&quot;&gt;{InstanceName}_$(id)&lt;/param&gt;"/>
+          <replacevariables />
           <move target="/Website/App_Config/Include/Sitecore.ContentSearch.Solr.Index.Web.config" />
         </editfile>
+         
+        
       </actions>
     </install>
   </archive>
