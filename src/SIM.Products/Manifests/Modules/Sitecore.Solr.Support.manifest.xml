@@ -56,7 +56,7 @@
         </editfile>
         <!-- Update Global.asax-->
         <editfile path="/Website/Global.asax" condition="not equals" conditionArg1="{IOC Option}" conditionArg2="CastleWindsor">
-          <replace source="Sitecore.Web.Application" target="Sitecore.ContentSearch.SolrProvider.{IOC Option}Integration.{IOC Option}Appliation"/>
+          <replace source="Sitecore.Web.Application" target="Sitecore.ContentSearch.SolrProvider.{IOC Option}Integration.{IOC Option}Application"/>
           <replacevariables/>
         </editfile>
         <editfile path="/Website/Global.asax" condition="equals" conditionArg1="{IOC Option}" conditionArg2="CastleWindsor">
