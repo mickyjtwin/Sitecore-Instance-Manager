@@ -149,7 +149,7 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
-    <None Include="IOC_Containers.zip" />
+    <EmbeddedResource Include="IOC_Containers.zip" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>

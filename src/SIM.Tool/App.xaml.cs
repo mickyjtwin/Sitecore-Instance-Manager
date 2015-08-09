@@ -4,6 +4,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Windows;
 using System.Xml;
@@ -143,6 +144,8 @@ namespace SIM.Tool
       // Run updater
       App.RunUpdater();
 
+      App.LoadIocResourcesForSolr();
+
       // Initializing plugins asynchronously 
       PluginManager.Initialize();
 
@@ -160,6 +163,18 @@ namespace SIM.Tool
         WindowHelper.HandleError("Main window caused unhandled exception", true, ex, typeof(App));
       }
     }
+
+    private static void LoadIocResourcesForSolr()
+    {
+
+      if (!Directory.Exists("IOC_Containers"))
+      {
+        Log.Info("Copying IOC dlls", typeof (App));
+        ApplicationManager.GetEmbeddedApp("IOC_Containers.zip", "SIM.Tool", "IOC_Containers");
+      }
+    }
+
+
 
     #endregion
 

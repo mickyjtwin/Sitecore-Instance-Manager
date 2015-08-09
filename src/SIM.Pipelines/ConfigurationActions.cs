@@ -1,4 +1,6 @@
-﻿namespace SIM.Pipelines
+﻿using System.Web.UI;
+
+namespace SIM.Pipelines
 {
   using System;
   using System.Collections.Generic;
@@ -770,6 +772,13 @@
             break;
           }
 
+          case "deployfile":
+          {
+            DeployFile(action.GetAttribute("path"), action.GetAttribute("target"), instance);
+            break;
+          }
+
+
           case "setRestrictingPlaceholders":
           {
             InstanceHelper.StartInstance(instance);
@@ -811,6 +820,17 @@
           }
         }
       }
+    }
+
+    private static void DeployFile(string path, string target, Instance instance)
+    {
+      string instanceRootPath = instance.RootPath;
+
+      var sourcePath = Path.Combine(ApplicationManager.TempFolder, path.TrimStart("/"));
+      var targetPath = Path.Combine(instanceRootPath, target.TrimStart("/"));
+
+      File.Copy(sourcePath, targetPath);
+
     }
 
     private static void SetRestrictingPlaceholders(string names, string url)

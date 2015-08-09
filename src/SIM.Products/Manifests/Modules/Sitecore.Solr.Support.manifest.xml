@@ -63,8 +63,34 @@
           <replace source="Sitecore.Web.Application" target="Sitecore.ContentSearch.SolrProvider.CastleWindsorIntegration.WindsorApplication"/>
           <replacevariables/>
         </editfile>
-         
-        
+        <!-- Deploy IOC Dlls -->
+        <deployfile path="SIM.Tool/IOC_Containers/Autofac.dll"           
+                    target="/Website/bin/Autofac.dll"  
+                    condition="equals" conditionArg1="{IOC Option}" conditionArg2="AutoFac" />
+        <deployfile path="SIM.Tool/IOC_Containers/Castle.Core.dll"       
+                    target="/Website/bin/Castle.Core.dll"  
+                    condition="equals" conditionArg1="{IOC Option}" conditionArg2="CastleWindsor" />
+        <deployfile path="SIM.Tool/IOC_Containers/Castle.Windsor.dll"    
+                    target="/Website/bin/Castle.Windsor.dll"
+                    condition="equals" conditionArg1="{IOC Option}" conditionArg2="CastleWindsor" />
+        <deployfile path="SIM.Tool/IOC_Containers/Ninject.dll"           
+                    target="/Website/bin/Ninject.dll"  
+                    condition="equals" conditionArg1="{IOC Option}" conditionArg2="Ninject" />
+        <deployfile path="SIM.Tool/IOC_Containers/StructureMap.dll"           
+                    target="/Website/bin/StructureMap.dll"  
+                    condition="equals" conditionArg1="{IOC Option}" conditionArg2="StructureMap" />
+        <deployfile path="SIM.Tool/IOC_Containers/StructureMap.Net4.dll"
+                    target="/Website/bin/StructureMap.Net4.dll"
+                    condition="equals" conditionArg1="{IOC Option}" conditionArg2="StructureMap" />
+        <deployfile path="SIM.Tool/IOC_Containers/Microsoft.Practices.Unity.Configuration.dll"
+                    target="/Website/bin/Microsoft.Practices.Unity.Configuration.dll"
+                    condition="equals" conditionArg1="{IOC Option}" conditionArg2="Unity" />
+        <deployfile path="SIM.Tool/IOC_Containers/Microsoft.Practices.Unity.dll"
+                    target="/Website/bin/Microsoft.Practices.Unity.dll"
+                    condition="equals" conditionArg1="{IOC Option}" conditionArg2="Unity" />
+        <deployfile path="SIM.Tool/IOC_Containers/Microsoft.Practices.Unity.RegistrationByConvention.dll"
+                    target="/Website/bin/Microsoft.Practices.Unity.RegistrationByConvention.dll"
+                    condition="equals" conditionArg1="{IOC Option}" conditionArg2="Unity" />
       </actions>
     </install>
   </archive>

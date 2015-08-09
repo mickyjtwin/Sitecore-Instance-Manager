@@ -126,7 +126,7 @@ namespace SIM
 
       var folder = Path.Combine(TempFolder, assemblyName);
       var filePath = Path.Combine(folder, executableName);
-      if (File.Exists(filePath))
+      if (File.Exists(filePath) || Directory.Exists(filePath))
       {
         return filePath;
       }
