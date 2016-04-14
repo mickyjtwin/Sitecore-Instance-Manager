@@ -12,9 +12,6 @@
         
         <!-- Disable Lucene configuration files -->
         <!-- TODO Is there a way to dynamically replace Lucene versions with Solr versions, if available, so that this plays well with other modules? -->
-        <editfile path="/Website/App_Config/Include/Sitecore.ContentSearch.Lucene.DefaultIndexConfiguration.config" >
-          <move target="/Website/App_Config/Include/Sitecore.ContentSearch.Lucene.DefaultIndexConfiguration.config.disabled" />
-        </editfile>
         <editfile path="/Website/App_Config/Include/Sitecore.ContentSearch.Lucene.Index.Analytics.config" >
           <move target="/Website/App_Config/Include/Sitecore.ContentSearch.Lucene.Index.Analytics.config.disabled" />
         </editfile>
