@@ -82,6 +82,7 @@
     <Compile Include="Install\0150 GrantPermissions.cs" />
     <Compile Include="Install\0350 MoveDatabases.cs" />
     <Compile Include="Install\0600 UpdateWebConfig.cs" />
+    <Compile Include="Install\Modules\CreateSolrCollections.cs" />
     <Compile Include="Install\Settings.cs" />
     <Compile Include="MongoHelper.cs" />
     <Compile Include="MultipleDeletion\MultipleDeletionArgs.cs" />

@@ -89,6 +89,7 @@
         <deployfile path="SIM.Tool/IOC_Containers/Microsoft.Practices.Unity.RegistrationByConvention.dll"
                     target="/Website/bin/Microsoft.Practices.Unity.RegistrationByConvention.dll"
                     condition="equals" conditionArg1="{IOC Option}" conditionArg2="Unity" />
+        <custom type="SIM.Pipelines.Install.Modules.CreateSolrCollections, SIM.Pipelines" />
       </actions>
     </install>
   </archive>
