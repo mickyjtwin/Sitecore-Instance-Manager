@@ -92,12 +92,18 @@ namespace SIM.Tests.Pipelines
       _sut.Execute(_instance,_module);
 
 
-      _sut.Received().RequestAndGetResponse("SOME_URL/admin/collections?action=CREATE&name=SOME_CORE_NAME");
+      var dirPath = "c:\\some\\path\\SOME_CORE_NAME\\";
+      string coreName = "SOME_CORE_NAME";
+      _sut.Received()
+        .RequestAndGetResponse(
+          string.Format(
+            "SOME_URL/admin/cores?action=CREATE&name={0}&instanceDir={1}&config=solrconfig.xml&schema=scheam.xml&dataDir=data", coreName, dirPath
+            ));
 
     }
 
     // TODO Copy sitecore optimized Schema.xml
-    // TODO Wire ExecuteSystemCommand to proper SIM utility
+    // TODO Replace execute command with SIM utitlies
 
     private string GetConfigXml(string someUrl, string someCoreName)
     {

@@ -59,7 +59,7 @@ namespace SIM.Pipelines.Install.Modules
 
         CreateCorePropertiesFile(coreName, newCorePath);
 
-        CallSolrCreateCoreAPI(url, coreName);
+        CallSolrCreateCoreAPI(url, coreName, newCorePath);
         
 
          
@@ -68,19 +68,22 @@ namespace SIM.Pipelines.Install.Modules
 
     }
 
-    private void CallSolrCreateCoreAPI(string url, string coreName)
+    private void CallSolrCreateCoreAPI(string url, string coreName, string instanceDir)
     {
       HttpWebResponse response = this.RequestAndGetResponse(string.Format(
-        "{0}/admin/collections?action=CREATE&name={1}", url, coreName));
+        "{0}/admin/cores?action=CREATE&name={1}&instanceDir={2}&config=solrconfig.xml&schema=scheam.xml&dataDir=data", url, coreName, instanceDir));
     }
 
     private void CreateCorePropertiesFile(string coreName, string newCorePath)
     {
+
+      //TODO Use FileSystem.Local.File
       this.ExecuteSystemCommand(string.Format("echo name={0} > {1}core.properties",coreName,newCorePath));
     }
 
     private void CreateCoreDirectory(string collection1Path, string newCorePath)
     {
+      // TODO Use DirectoryProvider
       this.ExecuteSystemCommand(string.Format("robocopy /e {0} {1}",
         collection1Path,
         newCorePath));
