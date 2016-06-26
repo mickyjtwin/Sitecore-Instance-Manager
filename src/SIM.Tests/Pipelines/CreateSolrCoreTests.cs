@@ -52,7 +52,7 @@ namespace SIM.Tests.Pipelines
 
       Act();
 
-      _sut.Received().RequestAndGetResponse("SOME_URL/solr/admin/cores");
+      _sut.Received().RequestAndGetResponse("SOME_URL/admin/cores");
     }
 
     [TestMethod, ExpectedException(typeof(ApplicationException))]
@@ -123,10 +123,10 @@ namespace SIM.Tests.Pipelines
     private void ArrangeGetCores(string coreInfo)
     {
       HttpWebResponse response = Substitute.For<HttpWebResponse>();
-      string returnValue = string.Format("<response><lst name='STATUS' >{0}</lst></response>", coreInfo);
+      string returnValue = string.Format("<response><lst name='status' >{0}</lst></response>", coreInfo);
       var bytes = UTF8Encoding.UTF8.GetBytes(returnValue);
       response.GetResponseStream().Returns(new MemoryStream(bytes));
-      _sut.RequestAndGetResponse("SOME_URL/solr/admin/cores").Returns(response);
+      _sut.RequestAndGetResponse("SOME_URL/admin/cores").Returns(response);
     }
   }
 }

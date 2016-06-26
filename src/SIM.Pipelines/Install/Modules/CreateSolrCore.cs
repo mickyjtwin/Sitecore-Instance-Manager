@@ -23,7 +23,7 @@ namespace SIM.Pipelines.Install.Modules
 
     public virtual void ExecuteSystemCommand(string cmd)
     {
-      throw new NotImplementedException();
+      System.Diagnostics.Process.Start(cmd);  //TODO Replace with SIM utilities.
     }
 
 
@@ -92,13 +92,13 @@ namespace SIM.Pipelines.Install.Modules
     private string GetCollection1Path(string url)
     {
       var response = this.RequestAndGetResponse(string.Format(
-        "{0}/solr/admin/cores", url));
+        "{0}/admin/cores", url));
 
       
       var doc = new XmlDocument();
       doc.Load(response.GetResponseStream());
 
-      XmlNode collection1Node = doc.SelectSingleNode("/response/lst[@name='STATUS']/lst[@name='collection1']");
+      XmlNode collection1Node = doc.SelectSingleNode("/response/lst[@name='status']/lst[@name='collection1']");
       if (collection1Node == null) throw new ApplicationException("collection1 not found");
 
       return collection1Node.SelectSingleNode("str[@name='instanceDir']").InnerText;
