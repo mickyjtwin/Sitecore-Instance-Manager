@@ -2,6 +2,7 @@
 using System.CodeDom;
 using System.IO;
 using System.Net;
+using System.Reflection;
 using System.Xml;
 using SIM.Instances;
 using SIM.Pipelines.InstallModules;
@@ -52,11 +53,20 @@ namespace SIM.Pipelines.Install.Modules
 
         DeleteCopiedCorePropertiesFile(corePath);
 
+        UpdateSchema(instance.WebRootPath, corePath);
+
         CallSolrCreateCoreAPI(url, coreName, corePath);
          
       }
 
 
+    }
+
+    private void UpdateSchema(string webRootPath, string corePath)
+    {
+      string contentSearchDllPath = webRootPath.EnsureEnd(@"\") + @"bin\Sitecore.ContentSearch.dll";
+      string schemaPath = corePath.EnsureEnd(@"\") + @"conf\schema.xml"; 
+      this.GenerateSchema(contentSearchDllPath, schemaPath);
     }
 
     private static string GetCoreName(XmlElement node)
@@ -112,6 +122,26 @@ namespace SIM.Pipelines.Install.Modules
     public virtual void DeleteFile(string path)
     {
       FileSystem.FileSystem.Local.File.Delete(path);
+    }
+
+
+    /// <summary>
+    /// Dynamically loads GenerateSchema class from target site.
+    /// See https://msdn.microsoft.com/en-us/library/1009fa28(v=vs.110).aspx
+    /// https://msdn.microsoft.com/en-us/library/system.reflection.methodinfo.invoke(v=vs.110).aspx
+    /// </summary>
+    /// <param name="dllPath"></param>
+    /// <param name="schemaPath"></param>
+
+    public virtual void GenerateSchema(string dllPath, string schemaPath)
+    {
+      var assembly = Assembly.LoadFrom(dllPath);
+      var generateSchema = assembly.GetType("Sitecore.ContentSearch.ProviderSupport.Solr.SchemaGenerator");
+      var obj = Activator.CreateInstance(generateSchema);
+      var method = generateSchema.GetMethod("GenerateSchema");
+      method.Invoke(obj, new object[] {schemaPath, schemaPath});
+
+      //TODO Create AppDomain http://stackoverflow.com/a/14184863/402949
     }
 
     #endregion

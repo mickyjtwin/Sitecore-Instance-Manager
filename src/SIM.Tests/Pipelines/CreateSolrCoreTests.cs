@@ -26,6 +26,7 @@ namespace SIM.Tests.Pipelines
     {
       _sut = Substitute.For<CreateSolrCore>();
       _instance = Substitute.For<Instance>();
+      _instance.WebRootPath.Returns(@"c:\some\website\");
       _module = Substitute.For<Product>();
       XmlDocument doc = new XmlDocument();
       doc.LoadXml(GetConfigXml("SOME_URL", "SOME_CORE_NAME", "SOME_ID"));
@@ -38,6 +39,7 @@ namespace SIM.Tests.Pipelines
       ArrangeGetCores("<lst name='collection1'>"+
                       "<str name='instanceDir'>c:\\some\\path\\collection1\\</str>"+
                       "</lst>");
+      
     }
 
     private void Act()
@@ -103,7 +105,20 @@ namespace SIM.Tests.Pipelines
 
     }
 
-    // TODO Copy sitecore optimized Schema.xml 
+    [TestMethod]
+    public void ShouldCallGenerateAssembly()
+    {
+      Arrange();
+
+      Act();
+
+      _sut.Received()
+        .GenerateSchema(@"c:\some\website\bin\Sitecore.ContentSearch.dll", @"c:\some\path\SOME_CORE_NAME\conf\schema.xml");
+    }
+
+    //TODO Test to rename Managed-Schema.xml
+
+     
 
     private string GetConfigXml(string someUrl, string someCoreName, string someId)
     {
