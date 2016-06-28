@@ -28,7 +28,7 @@ namespace SIM.Tests.Pipelines
       _instance = Substitute.For<Instance>();
       _module = Substitute.For<Product>();
       XmlDocument doc = new XmlDocument();
-      doc.LoadXml(GetConfigXml("SOME_URL", "SOME_CORE_NAME"));
+      doc.LoadXml(GetConfigXml("SOME_URL", "SOME_CORE_NAME", "SOME_ID"));
       _instance.GetShowconfig().Returns(doc);
 
     }
@@ -70,22 +70,23 @@ namespace SIM.Tests.Pipelines
 
       Act();
 
-      _sut.Received().ExecuteSystemCommand("robocopy /e c:\\some\\path\\collection1\\ c:\\some\\path\\SOME_CORE_NAME\\");
+      _sut.Received().CopyDirectory(@"c:\some\path\collection1\", @"c:\some\path\SOME_CORE_NAME\");
     }
 
     [TestMethod]
-    public void ShouldCopyNewCorePropertiesFile()
+    public void ShouldDeletePropertiesFile()
     {
       Arrange();
 
       Act();
 
-      _sut.Received().ExecuteSystemCommand("echo name=SOME_CORE_NAME > c:\\some\\path\\SOME_CORE_NAME\\core.properties");
+      _sut.Received().DeleteFile(@"c:\some\path\SOME_CORE_NAME\core.properties");
     }
 
 
+
     [TestMethod]
-    public void ShouldCreateCore()
+    public void ShouldCallSolrRE()
     {
       Arrange();
 
@@ -97,25 +98,24 @@ namespace SIM.Tests.Pipelines
       _sut.Received()
         .RequestAndGetResponse(
           string.Format(
-            "SOME_URL/admin/cores?action=CREATE&name={0}&instanceDir={1}&config=solrconfig.xml&schema=scheam.xml&dataDir=data", coreName, dirPath
+            "SOME_URL/admin/cores?action=CREATE&name={0}&instanceDir={1}&config=solrconfig.xml&schema=schema.xml&dataDir=data", coreName, dirPath
             ));
 
     }
 
-    // TODO Copy sitecore optimized Schema.xml
-    // TODO Replace execute command with SIM utitlies
+    // TODO Copy sitecore optimized Schema.xml 
 
-    private string GetConfigXml(string someUrl, string someCoreName)
+    private string GetConfigXml(string someUrl, string someCoreName, string someId)
     {
       return "<sitecore>" +
-             "<settings>" +
-             string.Format("<setting name='ContentSearch.Solr.ServiceBaseAddress' value='{0}' />", someUrl) +
-             "</settings>" +
+              "<settings>" +
+                  string.Format("<setting name='ContentSearch.Solr.ServiceBaseAddress' value='{0}' />", someUrl) +
+              "</settings>" +
              "<contentSearch>" +
-             "<configuration>" +
-             "<indexes>" +
-             "<index  type='Sitecore.ContentSearch.SolrProvider.SolrSearchIndex, Sitecore.ContentSearch.SolrProvider' id='id1'>" +
-    
+              "<configuration>" +
+                "<indexes>" +
+                  string.Format("<index  type='Sitecore.ContentSearch.SolrProvider.SolrSearchIndex, Sitecore.ContentSearch.SolrProvider' id='{0}'>", someId) +
+
              string.Format("<param desc='core' id='$(id)'>{0}</param>", someCoreName) +
              "</index></indexes></configuration></contentSearch></sitecore>";
     }

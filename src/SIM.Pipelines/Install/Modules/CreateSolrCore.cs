@@ -11,6 +11,8 @@ namespace SIM.Pipelines.Install.Modules
 {
   public class CreateSolrCore : IPackageInstallActions
   {
+    private const string DefaultCollectionName = "collection1";
+
     /// <summary>
     /// Wrap WebRequestHelper for unit testing.
     /// </summary>
@@ -37,59 +39,48 @@ namespace SIM.Pipelines.Install.Modules
               "/sitecore/contentSearch/configuration/indexes/index[@type='Sitecore.ContentSearch.SolrProvider.SolrSearchIndex, Sitecore.ContentSearch.SolrProvider']");
 
 
-      string collection1Path = GetCollection1Path(url);
+      string defaultCollectionPath = GetDefaultCollectionPath(url);
       
 
-      foreach (var node in solrIndexes)
+      foreach (XmlElement node in solrIndexes)
       {
-        var element = node as XmlElement;
-        if (element == null) continue;
-        string id = element.Attributes["id"].InnerText;
-        var coreElement = element.SelectSingleNode("param[@desc='core']") as XmlElement;
-       
-        if (coreElement == null) continue;
+        var coreName = GetCoreName(node);
 
-        string coreName = coreElement.InnerText.Replace("$(id)", id);
+        string corePath = defaultCollectionPath.Replace(DefaultCollectionName, coreName);
 
-        Log.Info("Core found:"+coreName, this);
+        this.CopyDirectory(defaultCollectionPath, corePath);
 
-        string newCorePath = collection1Path.Replace("collection1", coreName);
+        DeleteCopiedCorePropertiesFile(corePath);
 
-        CreateCoreDirectory(collection1Path, newCorePath);
-
-        CreateCorePropertiesFile(coreName, newCorePath);
-
-        CallSolrCreateCoreAPI(url, coreName, newCorePath);
-        
-
+        CallSolrCreateCoreAPI(url, coreName, corePath);
          
       }
 
 
     }
 
+    private static string GetCoreName(XmlElement node)
+    {
+      var coreElement = node.SelectSingleNode("param[@desc='core']") as XmlElement;
+      string id = node.Attributes["id"].InnerText;
+      string coreName = coreElement.InnerText.Replace("$(id)", id);
+      return coreName;
+    }
+
     private void CallSolrCreateCoreAPI(string url, string coreName, string instanceDir)
     {
       HttpWebResponse response = this.RequestAndGetResponse(string.Format(
-        "{0}/admin/cores?action=CREATE&name={1}&instanceDir={2}&config=solrconfig.xml&schema=scheam.xml&dataDir=data", url, coreName, instanceDir));
+        "{0}/admin/cores?action=CREATE&name={1}&instanceDir={2}&config=solrconfig.xml&schema=schema.xml&dataDir=data", url, coreName, instanceDir));
     }
 
-    private void CreateCorePropertiesFile(string coreName, string newCorePath)
+    private void DeleteCopiedCorePropertiesFile(string newCorePath)
     {
-
-      //TODO Use FileSystem.Local.File
-      this.ExecuteSystemCommand(string.Format("echo name={0} > {1}core.properties",coreName,newCorePath));
+      string path = string.Format(newCorePath.EnsureEnd(@"\") + "core.properties");
+      this.DeleteFile(path);
+       
     }
 
-    private void CreateCoreDirectory(string collection1Path, string newCorePath)
-    {
-      // TODO Use DirectoryProvider
-      this.ExecuteSystemCommand(string.Format("robocopy /e {0} {1}",
-        collection1Path,
-        newCorePath));
-    }
-
-    private string GetCollection1Path(string url)
+    private string GetDefaultCollectionPath(string url)
     {
       var response = this.RequestAndGetResponse(string.Format(
         "{0}/admin/cores", url));
@@ -105,5 +96,24 @@ namespace SIM.Pipelines.Install.Modules
 
 
     }
+
+    #region System calls are virtual for unit testing
+
+    public virtual void CopyDirectory(string sourcePath, string destinationPath)
+    {
+      FileSystem.FileSystem.Local.Directory.Copy(sourcePath, destinationPath, recursive:true);
+    }
+
+    public virtual void WriteAllText(string path, string text)
+    {
+      FileSystem.FileSystem.Local.File.WriteAllText(path, text);
+    }
+
+    public virtual void DeleteFile(string path)
+    {
+      FileSystem.FileSystem.Local.File.Delete(path);
+    }
+
+    #endregion
   }
 }
