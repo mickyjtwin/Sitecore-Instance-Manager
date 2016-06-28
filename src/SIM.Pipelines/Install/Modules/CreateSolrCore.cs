@@ -140,8 +140,6 @@ namespace SIM.Pipelines.Install.Modules
       var obj = Activator.CreateInstance(generateSchema);
       var method = generateSchema.GetMethod("GenerateSchema");
       method.Invoke(obj, new object[] {schemaPath, schemaPath});
-
-      //TODO Create AppDomain http://stackoverflow.com/a/14184863/402949
     }
 
     #endregion
