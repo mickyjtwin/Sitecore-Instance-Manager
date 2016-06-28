@@ -17,6 +17,9 @@ namespace SIM.Tests.Pipelines
   [TestClass]
   public class CreateSolrCoreTests
   {
+    private const string DllPath = @"c:\some\website\bin\Sitecore.ContentSearch.dll";
+    private const string SchemaPath = @"c:\some\path\SOME_CORE_NAME\conf\schema.xml";
+    private const string ManagedSchemaPath = @"c:\some\path\SOME_CORE_NAME\conf\managed-schema.xml";
     private CreateSolrCore _sut;
     private Instance _instance;
     private Product _module;
@@ -39,7 +42,9 @@ namespace SIM.Tests.Pipelines
       ArrangeGetCores("<lst name='collection1'>"+
                       "<str name='instanceDir'>c:\\some\\path\\collection1\\</str>"+
                       "</lst>");
-      
+      _sut.FileExists(SchemaPath).Returns(true);
+      _sut.FileExists(ManagedSchemaPath).Returns(false);
+
     }
 
     private void Act()
@@ -109,16 +114,41 @@ namespace SIM.Tests.Pipelines
     public void ShouldCallGenerateAssembly()
     {
       Arrange();
+      
+     
 
       Act();
 
       _sut.Received()
-        .GenerateSchema(@"c:\some\website\bin\Sitecore.ContentSearch.dll", @"c:\some\path\SOME_CORE_NAME\conf\schema.xml");
+        .GenerateSchema(DllPath, SchemaPath, SchemaPath);
     }
 
-    //TODO Test to rename Managed-Schema.xml
+    [TestMethod]
+    public void ShouldUseManagedSchemaFileWhenNoSchema()
+    {
+      Arrange();
+      _sut.FileExists(SchemaPath).Returns(false);
+      _sut.FileExists(ManagedSchemaPath).Returns(true);
 
-     
+      Act();
+
+      _sut.Received()
+        .GenerateSchema(DllPath, ManagedSchemaPath, SchemaPath);
+    }
+
+    [TestMethod, ExpectedException(typeof(FileNotFoundException))]
+    public void ShouldThrowIfNoSchema()
+    {
+      Arrange();
+      _sut.FileExists(SchemaPath).Returns(false);
+      _sut.FileExists(ManagedSchemaPath).Returns(false);
+
+      Act();
+
+      
+    }
+
+
 
     private string GetConfigXml(string someUrl, string someCoreName, string someId)
     {

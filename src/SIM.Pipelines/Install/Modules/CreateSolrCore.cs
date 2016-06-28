@@ -66,7 +66,17 @@ namespace SIM.Pipelines.Install.Modules
     {
       string contentSearchDllPath = webRootPath.EnsureEnd(@"\") + @"bin\Sitecore.ContentSearch.dll";
       string schemaPath = corePath.EnsureEnd(@"\") + @"conf\schema.xml"; 
-      this.GenerateSchema(contentSearchDllPath, schemaPath);
+      string managedSchemaPath = corePath.EnsureEnd(@"\") + @"conf\managed-schema.xml";
+
+      bool schemaExists = FileExists(schemaPath);
+      bool managedSchemaExists = FileExists(managedSchemaPath);
+
+      if (!schemaExists && !managedSchemaExists) throw new FileNotFoundException(string.Format("Schema file not found: Checked here {0} and here {1}.", schemaPath, managedSchemaPath));
+
+      string inputPath = managedSchemaExists ? managedSchemaPath : schemaPath;
+      string outputPath = schemaPath;
+
+      this.GenerateSchema(contentSearchDllPath, inputPath, outputPath);
     }
 
     private static string GetCoreName(XmlElement node)
@@ -124,22 +134,27 @@ namespace SIM.Pipelines.Install.Modules
       FileSystem.FileSystem.Local.File.Delete(path);
     }
 
+    public virtual bool FileExists(string path)
+    {
+      return FileSystem.FileSystem.Local.File.Exists(path);
+    }
+
 
     /// <summary>
     /// Dynamically loads GenerateSchema class from target site.
     /// See https://msdn.microsoft.com/en-us/library/1009fa28(v=vs.110).aspx
     /// https://msdn.microsoft.com/en-us/library/system.reflection.methodinfo.invoke(v=vs.110).aspx
     /// </summary>
+    /// <param name="path"></param>
     /// <param name="dllPath"></param>
     /// <param name="schemaPath"></param>
-
-    public virtual void GenerateSchema(string dllPath, string schemaPath)
+    public virtual void GenerateSchema(string dllPath, string inputPath, string outputPath)
     {
       var assembly = Assembly.LoadFrom(dllPath);
       var generateSchema = assembly.GetType("Sitecore.ContentSearch.ProviderSupport.Solr.SchemaGenerator");
       var obj = Activator.CreateInstance(generateSchema);
       var method = generateSchema.GetMethod("GenerateSchema");
-      method.Invoke(obj, new object[] {schemaPath, schemaPath});
+      method.Invoke(obj, new object[] {inputPath, outputPath});
     }
 
     #endregion
