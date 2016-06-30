@@ -5,11 +5,11 @@
     <install>
       <params>
           <param name="{IOC Option}" title="Select Solr IOC configuration" defaultValue="AutoFac" mode="select" options="AutoFac|CastleWindsor|Ninject|StructureMap|Unity" />
-          <param name="{SOLR URL}" title="Select Solr URL" defaultValue="http://localhost:8983/" />
+          <param name="{SOLR URL}" title="Select Solr URL" defaultValue="http://localhost:8983/solr" />
         </params>
       <actions>
         <extract />
-        <custom type="SIM.Pipelines.Install.Modules.SwitchConfigsToSolr, SIM.Pipelines" />
+        <custom type="SIM.Pipelines.Install.Modules.SwitchConfigsToSolr, SIM.Pipelines" SolrUrl="{SOLR URL}" />
         <!-- Update Global.asax-->
         <editfile path="/Website/Global.asax" condition="not equals" conditionArg1="{IOC Option}" conditionArg2="CastleWindsor">
           <replace source="Sitecore.Web.Application" target="Sitecore.ContentSearch.SolrProvider.{IOC Option}Integration.{IOC Option}Application"/>

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -12,9 +13,14 @@ namespace SIM.Pipelines.Install.Modules
   {
     public Instance Instance { get; set; }
 
+    public string SolrUrl { get; set; }
+
     public void Execute(Instance instance, Product module)
     {
+
       Instance = instance;
+
+      UpdateSolrUrl();
 
       EnableSolrFiles();
 
@@ -22,6 +28,21 @@ namespace SIM.Pipelines.Install.Modules
 
       RenameCores();
 
+    }
+     
+    /// <summary>
+    /// TDD this you fool. :)
+    /// </summary>
+
+    private void UpdateSolrUrl()
+    {
+      if (string.IsNullOrEmpty(SolrUrl)) return;
+
+      if (SolrUrl != "http://localhost:8983/solr")
+      {
+        string newUrl = SolrUrl.TrimEnd("/").EnsureEnd("/solr");
+        
+      }
     }
 
     private void EnableSolrFiles()

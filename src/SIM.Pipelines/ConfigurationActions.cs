@@ -1,4 +1,5 @@
-﻿using System.Web.UI;
+﻿using System.Reflection;
+using System.Web.UI;
 
 namespace SIM.Pipelines
 {
@@ -790,6 +791,13 @@ namespace SIM.Pipelines
           {
             var typeName = action.GetAttribute("type").EmptyToNull().IsNotNull("The type attribute is missing in the <custom> install action");
             var obj = (IPackageInstallActions)ReflectionUtil.CreateObject(typeName);
+            //TODO Replace with more generalized code to pull properties from node.
+            Type type = obj.GetType();
+            PropertyInfo propertyInfo = type.GetProperty("SolrUrl");
+            if (action.HasAttribute("SolrUrl") && propertyInfo != null)
+            {
+              propertyInfo.GetSetMethod().Invoke(obj, new object[] {action.GetAttribute("SolrUrl") });
+            }
             obj.Execute(instance, module);
             break;
           }
