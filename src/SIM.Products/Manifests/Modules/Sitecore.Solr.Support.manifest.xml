@@ -4,7 +4,7 @@
     <install>
       <params>
           <param name="{IOC Option}" title="Select Solr IOC configuration" defaultValue="AutoFac" mode="select" options="AutoFac|CastleWindsor|Ninject|StructureMap|Unity" />
-          <param name="{SOLR URL}" title="Select Solr URL" defaultValue="http://localhost:8983/" />
+          <param name="{SOLR URL}" title="Select Solr URL" defaultValue="http://localhost:8983/solr" />
         </params>
       <actions>
         <extract />
