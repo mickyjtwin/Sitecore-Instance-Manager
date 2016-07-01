@@ -12,6 +12,7 @@ namespace SIM.Pipelines.Install.Modules
 {
   public class CreateSolrCore : IPackageInstallActions
   {
+
     private const string DefaultCollectionName = "collection1";
 
     /// <summary>
@@ -24,20 +25,13 @@ namespace SIM.Pipelines.Install.Modules
       return WebRequestHelper.RequestAndGetResponse(url);
     }
 
-    public virtual void ExecuteSystemCommand(string cmd)
-    {
-      System.Diagnostics.Process.Start(cmd);  //TODO Replace with SIM utilities.
-    }
-
 
     public void Execute(Instance instance, Product module)
     {
       XmlDocument config = instance.GetShowconfig();
-      string url = config.SelectSingleNode("/sitecore/settings/setting[@name='ContentSearch.Solr.ServiceBaseAddress']").Attributes["value"].Value;
+      string url = GetUrl(config);
 
-      XmlNodeList solrIndexes =
-          config.SelectNodes(
-              "/sitecore/contentSearch/configuration/indexes/index[@type='Sitecore.ContentSearch.SolrProvider.SolrSearchIndex, Sitecore.ContentSearch.SolrProvider']");
+      XmlNodeList solrIndexes = GetSolrIndexNodes(config);
 
 
       string defaultCollectionPath = GetDefaultCollectionPath(url);
@@ -58,15 +52,24 @@ namespace SIM.Pipelines.Install.Modules
         CallSolrCreateCoreAPI(url, coreName, corePath);
          
       }
+    }
 
+    private static XmlNodeList GetSolrIndexNodes(XmlDocument config)
+    {
+      return config.SelectNodes(
+        "/sitecore/contentSearch/configuration/indexes/index[@type='Sitecore.ContentSearch.SolrProvider.SolrSearchIndex, Sitecore.ContentSearch.SolrProvider']");
+    }
 
+    private static string GetUrl(XmlDocument config)
+    {
+      return config.SelectSingleNode("/sitecore/settings/setting[@name='ContentSearch.Solr.ServiceBaseAddress']").Attributes["value"].Value;
     }
 
     private void UpdateSchema(string webRootPath, string corePath)
     {
       string contentSearchDllPath = webRootPath.EnsureEnd(@"\") + @"bin\Sitecore.ContentSearch.dll";
       string schemaPath = corePath.EnsureEnd(@"\") + @"conf\schema.xml"; 
-      string managedSchemaPath = corePath.EnsureEnd(@"\") + @"conf\managed-schema.xml";
+      string managedSchemaPath = corePath.EnsureEnd(@"\") + @"conf\managed-schema.xml";  //TODO Wrong name
 
       bool schemaExists = FileExists(schemaPath);
       bool managedSchemaExists = FileExists(managedSchemaPath);
@@ -97,14 +100,12 @@ namespace SIM.Pipelines.Install.Modules
     {
       string path = string.Format(newCorePath.EnsureEnd(@"\") + "core.properties");
       this.DeleteFile(path);
-       
     }
 
     private string GetDefaultCollectionPath(string url)
     {
       var response = this.RequestAndGetResponse(string.Format(
         "{0}/admin/cores", url));
-
       
       var doc = new XmlDocument();
       doc.Load(response.GetResponseStream());
@@ -113,8 +114,6 @@ namespace SIM.Pipelines.Install.Modules
       if (collection1Node == null) throw new ApplicationException("collection1 not found");
 
       return collection1Node.SelectSingleNode("str[@name='instanceDir']").InnerText;
-
-
     }
 
     #region System calls are virtual for unit testing
@@ -138,7 +137,6 @@ namespace SIM.Pipelines.Install.Modules
     {
       return FileSystem.FileSystem.Local.File.Exists(path);
     }
-
 
     /// <summary>
     /// Dynamically loads GenerateSchema class from target site.
