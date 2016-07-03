@@ -11,7 +11,7 @@
   using SIM.Instances;
   using SIM.Pipelines.Processors;
   using SIM.Products;
-  using Sitecore.Diagnostics.Annotations;
+  using Sitecore.Diagnostics.Base.Annotations;
 
   #endregion
 
@@ -34,7 +34,7 @@
     public readonly bool ForceNetFramework4;
 
     [CanBeNull]
-    public readonly IEnumerable<Database> InstanceDatabases;
+    public readonly ICollection<Database> InstanceDatabases;
 
     public readonly bool Is32Bit;
 
@@ -55,7 +55,7 @@
     public readonly string RootPath;
 
     [NotNull]
-    public readonly Action<bool> StopInstance;
+    public readonly Action<bool?> StopInstance;
 
     public readonly string TempFolder;
 
@@ -65,17 +65,20 @@
     [NotNull]
     public readonly string WebServerIdentity;
 
-    [NotNull]
     public readonly long WebsiteID;
 
     [NotNull]
     public readonly string instanceName;
 
+    public readonly bool ServerSideRedirect;
+
+    public readonly bool IncreaseExecutionTimeout;
+
     #endregion
 
     #region Constructors
 
-    public ReinstallArgs(Instance instance, SqlConnectionStringBuilder connectionString, string license, string webServerIdentity)
+    public ReinstallArgs(Instance instance, SqlConnectionStringBuilder connectionString, string license, string webServerIdentity, bool serverSideRedirect)
     {
       this.ConnectionString = connectionString;
       this.Name = instance.Name;
@@ -91,16 +94,20 @@
       this.IsClassic = instance.IsClassic;
       this.Is32Bit = instance.Is32Bit;
       this.ForceNetFramework4 = instance.IsNetFramework4;
+      this.ServerSideRedirect = serverSideRedirect;
       this.TempFolder = Path.Combine(this.RootPath, "Temp");
       this.InstanceDatabases = instance.AttachedDatabases;
       this.instanceName = instance.Name;
       this.StopInstance = instance.Stop;
       this.WebsiteID = instance.ID;
+
+      var executionTimeout = UpdateWebConfigHelper.GetHttpRuntime(instance.GetWebResultConfig()).GetAttribute("executionTimeout");
+      this.IncreaseExecutionTimeout = string.IsNullOrEmpty(executionTimeout) || executionTimeout != "600";
     }
 
-    #endregion
-
     #region Properties
+
+    #endregion
 
     [NotNull]
     public string PackagePath

@@ -13,8 +13,9 @@
   using SIM.Tool.Base;
   using SIM.Tool.Base.Pipelines;
   using SIM.Tool.Base.Wizards;
-  using Sitecore.Diagnostics;
-  using Sitecore.Diagnostics.Annotations;
+  using Sitecore.Diagnostics.Base;
+  using Sitecore.Diagnostics.Base.Annotations;
+  using SIM.Core;
 
   public partial class FilePackages : IWizardStep, ICustomButton, IFlowControl
   {
@@ -184,10 +185,12 @@
 
     private void Append(string folder)
     {
-      var ver = AppSettings.AppToolsVisualStudioVersion.Value;
-
-      IEnumerable<string> files = FileSystem.FileSystem.Local.Directory.GetFiles(folder, "*.zip", SearchOption.AllDirectories).Where(f => !f.ContainsIgnoreCase("Visual Studio") || f.ContainsIgnoreCase("Visual Studio " + ver));
-
+      if (!Directory.Exists(folder))
+      {
+        return;
+      }
+      
+      var files = FileSystem.FileSystem.Local.Directory.GetFiles(folder, "*.zip", SearchOption.AllDirectories);
       var productsToAdd = files.Select(f => new ProductInCheckbox(Product.GetFilePackageProduct(f))).ToList();
       foreach (ProductInCheckbox productInCheckbox in productsToAdd)
       {
@@ -251,7 +254,7 @@
       }
       catch (Exception ex)
       {
-        WindowHelper.HandleError(ex.Message, true, ex, this);
+        WindowHelper.HandleError(ex.Message, true, ex);
       }
     }
 

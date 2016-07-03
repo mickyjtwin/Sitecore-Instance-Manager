@@ -6,8 +6,8 @@
   using SIM.Instances;
   using SIM.Pipelines.Processors;
   using SIM.Products;
-  using Sitecore.Diagnostics;
-  using Sitecore.Diagnostics.Annotations;
+  using Sitecore.Diagnostics.Base;
+  using Sitecore.Diagnostics.Base.Annotations;
 
   #region
 
@@ -54,20 +54,20 @@
     public readonly string SqlServerIdentity;
 
     [NotNull]
-    public readonly string UniqueTempFolder;
-
-    [NotNull]
     public readonly string WebRootPath;
 
     [NotNull]
     public readonly string WebServerIdentity;
 
+    public readonly bool InstallRadControls;
+    public readonly bool InstallDictionaries;
+
     #endregion
 
     #region Constructors
 
-    public InstallArgs([NotNull] string name, [NotNull] string host, [NotNull] Product product, [NotNull] string rootPath, [NotNull] SqlConnectionStringBuilder connectionString, [NotNull] string sqlServerIdentity, [NotNull] string webServerIdentity, [NotNull] FileInfo license, bool forceNetFramework4, bool is32Bit, bool isClassic, [NotNull] IEnumerable<Product> modules)
-      : this(name, host, product, Path.Combine(rootPath, "Website"), Path.Combine(rootPath, "Data"), Path.Combine(rootPath, "Databases"), connectionString, sqlServerIdentity, webServerIdentity, license, forceNetFramework4, is32Bit, isClassic, rootPath, modules)
+    public InstallArgs([NotNull] string name, [NotNull] string host, [NotNull] Product product, [NotNull] string rootPath, [NotNull] SqlConnectionStringBuilder connectionString, [NotNull] string sqlServerIdentity, [NotNull] string webServerIdentity, [NotNull] FileInfo license, bool forceNetFramework4, bool is32Bit, bool isClassic, bool installRadControls, bool installDictionaries, bool serverSideRedirect, bool increaseExecutionTimeout, [NotNull] IEnumerable<Product> modules)
+      : this(name, host, product, Path.Combine(rootPath, "Website"), Path.Combine(rootPath, "Data"), Path.Combine(rootPath, "Databases"), connectionString, sqlServerIdentity, webServerIdentity, license, forceNetFramework4, is32Bit, isClassic, installRadControls, installDictionaries, serverSideRedirect, increaseExecutionTimeout, rootPath, modules)
     {
       Assert.ArgumentNotNull(name, "name");
       Assert.ArgumentNotNull(host, "host");
@@ -82,7 +82,7 @@
       this.Modules = modules;
     }
 
-    public InstallArgs([NotNull] string name, [NotNull] string host, [NotNull] Product product, [NotNull] string webRootPath, [NotNull] string dataFolderPath, [NotNull] string databasesFolderPath, [NotNull] SqlConnectionStringBuilder connectionString, [NotNull] string sqlServerIdentity, [NotNull] string webServerIdentity, [NotNull] FileInfo license, bool forceNetFramework4, bool is32Bit, bool isClassic, [NotNull] string rootPath, [NotNull] IEnumerable<Product> modules)
+    public InstallArgs([NotNull] string name, [NotNull] string host, [NotNull] Product product, [NotNull] string webRootPath, [NotNull] string dataFolderPath, [NotNull] string databasesFolderPath, [NotNull] SqlConnectionStringBuilder connectionString, [NotNull] string sqlServerIdentity, [NotNull] string webServerIdentity, [NotNull] FileInfo license, bool forceNetFramework4, bool is32Bit, bool isClassic, bool installRadControls, bool installDictionaries, bool serverSideRedirect, bool increaseExecutionTimeout, [NotNull] string rootPath, [NotNull] IEnumerable<Product> modules)
     {
       Assert.ArgumentNotNull(name, "name");
       Assert.ArgumentNotNull(host, "host");
@@ -97,9 +97,6 @@
       Assert.ArgumentNotNull(rootPath, "rootPath");
       Assert.ArgumentNotNull(modules, "modules");
 
-      string uniqueTempFolder = FileSystem.FileSystem.Local.Directory.GenerateTempFolderPath(Settings.CoreInstallTempFolderLocation.Value.EmptyToNull() ?? Path.GetPathRoot(webRootPath));
-      FileSystem.FileSystem.Local.Directory.Ensure(uniqueTempFolder);
-
       this.Name = name;
       this.Modules = modules;
       this.HostName = host;
@@ -108,7 +105,6 @@
       this.DataFolderPath = dataFolderPath;
       this.DatabasesFolderPath = databasesFolderPath;
       this.WebRootPath = webRootPath;
-      this.UniqueTempFolder = uniqueTempFolder;
       this.LicenseFilePath = license.FullName;
       this.SqlServerIdentity = sqlServerIdentity;
       this.WebServerIdentity = webServerIdentity;
@@ -116,6 +112,10 @@
       this.Is32Bit = is32Bit;
       this.IsClassic = isClassic;
       this.RootFolderPath = rootPath;
+      this.InstallRadControls = installRadControls;
+      this.InstallDictionaries = installDictionaries;
+      this.ServerSideRedirect = serverSideRedirect;
+      this.IncreaseExecutionTimeout = increaseExecutionTimeout;
     }
 
     #endregion
@@ -143,16 +143,9 @@
       }
     }
 
-    #endregion
+    public bool ServerSideRedirect { get; set; }
 
-    #region Public Methods
-
-    public override void Dispose()
-    {
-      FileSystem.FileSystem.Local.Directory.TryDelete(this.UniqueTempFolder);
-
-      base.Dispose();
-    }
+    public bool IncreaseExecutionTimeout { get; set; }
 
     #endregion
 

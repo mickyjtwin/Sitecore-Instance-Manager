@@ -4,8 +4,9 @@
   using System.Collections.Generic;
   using System.IO;
   using System.Linq;
-  using Sitecore.Diagnostics;
-  using Sitecore.Diagnostics.Annotations;
+  using Sitecore.Diagnostics.Base;
+  using Sitecore.Diagnostics.Base.Annotations;
+  using Sitecore.Diagnostics.Logging;
 
   public static class ManifestHelper
   {
@@ -34,69 +35,9 @@
 
     #region Public methods
 
-    public static void CheckUpdateNeeded()
-    {
-      using (new ProfileSection("Checking if manifests update needed", typeof(ManifestHelper)))
-      {
-        try
-        {
-          if (!ProductHelper.Settings.CoreManifestsUpdateEnabled.Value)
-          {
-            UpdateNeeded = false;
-            return;
-          }
-
-          foreach (var name in new[]
-          {
-            "newmanifests.zip", "newmanifests.zip.tmp"
-          })
-          {
-            string filePath = Path.Combine(Environment.CurrentDirectory, name);
-            if (FileSystem.FileSystem.Local.File.Exists(filePath))
-            {
-              Log.Warn("The " + name + " exists however it must not to be", typeof(ManifestHelper));
-              try
-              {
-                FileSystem.FileSystem.Local.File.Delete(filePath);
-                Log.Info("The " + name + " has been deleted", typeof(ManifestHelper));
-              }
-              catch (Exception ex)
-              {
-                Log.Warn("Cannot delete " + name + string.Empty, typeof(ManifestHelper), ex);
-                ProfileSection.Result(false);
-                return;
-              }
-            }
-          }
-
-          string manifestUrl = ProductHelper.Settings.CoreManifestsUpdateDatabaseUrl.Value;
-          string localManifestsPath = Path.Combine(Environment.CurrentDirectory, "manifests.zip");
-          if (!FileSystem.FileSystem.Local.File.Exists(localManifestsPath))
-          {
-            UpdateNeeded = true;
-            ProfileSection.Result(UpdateNeeded);
-            return;
-          }
-
-          var localFileSize = FileSystem.FileSystem.Local.File.GetFileLength(localManifestsPath);
-          var remoteFileSize = WebRequestHelper.GetFileSize(new Uri(manifestUrl));
-
-          UpdateNeeded = localFileSize != remoteFileSize;
-          Log.Debug("Local manifests.zip file size is " + localFileSize);
-          Log.Debug("Remote manifests.zip file size is " + remoteFileSize);
-          ProfileSection.Result(UpdateNeeded);
-        }
-        catch (Exception ex)
-        {
-          Log.Error("Error while updating manifests", typeof(ManifestHelper), ex);
-          ProfileSection.Result(false);
-        }
-      }
-    }
-
     public static XmlDocumentEx Compute(string packageFile, string originalName = null)
     {
-      using (new ProfileSection("Compute manifest", typeof(ManifestHelper)))
+      using (new ProfileSection("Compute manifest"))
       {
         ProfileSection.Argument("packageFile", packageFile);
         ProfileSection.Argument("originalName", originalName);
@@ -111,7 +52,7 @@
         }
         catch (Exception ex)
         {
-          Log.Error("Failed to build a manifest for " + packageFile, typeof(ManifestHelper), ex);
+          Log.Error(ex, "Failed to build a manifest for " + packageFile);
 
           return Product.EmptyManifest;
         }
@@ -122,7 +63,7 @@
     {
       Assert.IsNotNullOrEmpty(packageFile, "packageFile");
 
-      using (new ProfileSection("Get file name patterns", typeof(ManifestHelper)))
+      using (new ProfileSection("Get file name patterns"))
       {
         ProfileSection.Argument("packageFile", packageFile);
         ProfileSection.Argument("originalName", originalName);
@@ -168,68 +109,13 @@
       }
     }
 
-    public static void UpdateManifestsSync()
-    {
-      using (new ProfileSection("Updating manifests", typeof(ManifestHelper)))
-      {
-        if (!ManifestHelper.UpdateNeeded)
-        {
-          ProfileSection.Result("Not needed");
-          return;
-        }
-
-        var manifestUrl = ProductHelper.Settings.CoreManifestsUpdateDatabaseUrl.Value;
-        var newLocalManifests = Path.Combine(Environment.CurrentDirectory, "newmanifests.zip");
-
-        try
-        {
-          try
-          {
-            var newLocalManifestsTmp = Path.Combine(Environment.CurrentDirectory, "newmanifests.zip.tmp");
-            WebRequestHelper.DownloadFile(new Uri(manifestUrl), newLocalManifestsTmp);
-
-            try
-            {
-              FileSystem.FileSystem.Local.File.Move(newLocalManifestsTmp, newLocalManifests, true);
-            }
-            catch (Exception ex)
-            {
-              Log.Error("Cannot rename newmanifests.zip.tmp into newmanifests.zip", typeof(ManifestHelper), ex);
-              ProfileSection.Result("Terminated");
-              return;
-            }
-          }
-          catch (Exception e)
-          {
-            Log.Error("Could not download manifests.zip", typeof(ManifestHelper), e);
-            ProfileSection.Result("Terminated");
-            return;
-          }
-
-          FileSystem.FileSystem.Local.Directory.DeleteIfExists("Manifests");
-          FileSystem.FileSystem.Local.Zip.UnpackZip(newLocalManifests, Environment.CurrentDirectory, null, 1, null, true);
-
-          var localManifestsPath = Path.Combine(Environment.CurrentDirectory, "manifests.zip");
-          FileSystem.FileSystem.Local.File.Move(newLocalManifests, localManifestsPath, true);
-
-          CacheManager.ClearAll();
-          ProfileSection.Result("Done");
-        }
-        catch (Exception ex)
-        {
-          Log.Error("Error while unpacking newmanifests.zip", typeof(ManifestHelper), ex);
-          ProfileSection.Result("Terminated");
-        }
-      }
-    }
-
     #endregion
 
     #region Private methods
 
     private static XmlDocumentEx Compute(string packageFile, LookupFolder[] manifestLookupFolders, List<string> fileNamePatterns)
     {
-      using (new ProfileSection("Compute manifest", typeof(ManifestHelper)))
+      using (new ProfileSection("Compute manifest"))
       {
         ProfileSection.Argument("packageFile", packageFile);
         ProfileSection.Argument("manifestLookupFolders", manifestLookupFolders);
@@ -245,29 +131,29 @@
             var folderPath = lookupFolder.Path;
             if (!FileSystem.FileSystem.Local.Directory.Exists(folderPath))
             {
-              Log.Warn("The {0} manifest lookup folder doesn't exist".FormatWith(lookupFolder), typeof(ManifestHelper));
+              Log.Warn("The {0} manifest lookup folder doesn't exist", lookupFolder);
               continue;
             }
 
-            using (new ProfileSection("Looking for manifests in folder", typeof(ManifestHelper)))
+            using (new ProfileSection("Looking for manifests in folder"))
             {
               ProfileSection.Argument("lookupFolder", lookupFolder);
 
               foreach (string fileNamePattern in fileNamePatterns)
               {
                 string fileName = fileNamePattern + ManifestExtension;
-                using (new ProfileSection("Looking for manifests with pattern", typeof(ManifestHelper)))
+                using (new ProfileSection("Looking for manifests with pattern"))
                 {
                   ProfileSection.Argument("fileName", fileName);
 
                   try
                   {
                     string[] findings = FileSystem.FileSystem.Local.Directory.GetFiles(folderPath, fileName, lookupFolder.Recursive ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly);
-                    Log.Debug("Found " + findings.Length + " matches");
+                    Log.Debug("Found {0} matches", findings.Length);
                     if (findings.Length == 1)
                     {
                       string path = findings.First();
-                      Log.Debug("Found '" + path + "'");
+                      Log.Debug("Found '{0}'", path);
                       try
                       {
                         if (mainDocument == null)
@@ -289,14 +175,14 @@
                       }
                       catch (Exception ex)
                       {
-                        HandleError(path, list, ex);
+                        HandleError(ex, path, list);
                       }
                     }
                     else if (findings.Length > 1)
                     {
                       var findingsText = findings.Join(Environment.NewLine);
                       var message = "There are several {0} files in the {1} folder: {2}".FormatWith(fileName, lookupFolder, findingsText);
-                      Log.Warn(message, typeof(ManifestHelper));
+                      Log.Warn(message);
 
                       ProfileSection.Result("Skipped (Too many files found)");
                     }
@@ -307,7 +193,7 @@
                   }
                   catch (Exception ex)
                   {
-                    Log.Warn("Failed looking for \"{0}\" manifests in \"{1}\"".FormatWith(fileNamePattern, folderPath), typeof(ManifestHelper), ex);
+                    Log.Warn(ex, "Failed looking for \"{0}\" manifests in \"{1}\"", fileNamePattern, folderPath);
                   }
                 }
               }
@@ -316,14 +202,14 @@
         }
         catch (Exception ex)
         {
-          Log.Error("Failed to find and merge manifests on file system", typeof(ManifestHelper), ex);
+          Log.Error(ex, "Failed to find and merge manifests on file system");
         }
 
         XmlDocumentEx archiveManifest = Product.ArchiveManifest;
         XmlDocumentEx packageManifest = Product.PackageManifest;
         if (mainDocument != null)
         {
-          if (mainDocument.SelectSingleElement("/manifest[@version='1.3']/archive") != null)
+          if (mainDocument.SelectSingleElement("/manifest/archive") != null)
           {
             CacheManager.SetEntry("IsPackage", packageFile, "false");
             try
@@ -333,10 +219,10 @@
             }
             catch (Exception ex)
             {
-              HandleError(archiveManifest.FilePath, list, ex);
+              HandleError(ex, archiveManifest.FilePath, list);
             }
           }
-          else if (mainDocument.SelectSingleElement("/manifest[@version='1.3']/package") != null)
+          else if (mainDocument.SelectSingleElement("/manifest/package") != null)
           {
             CacheManager.SetEntry("IsPackage", packageFile, "true");
             try
@@ -346,7 +232,7 @@
             }
             catch (Exception ex)
             {
-              HandleError(packageManifest.FilePath, list, ex);
+              HandleError(ex, packageManifest.FilePath, list);
             }
           }
 
@@ -355,7 +241,7 @@
 
         if (FileSystem.FileSystem.Local.Zip.ZipContainsSingleFile(packageFile, "package.zip"))
         {
-          Log.Info("The '{0}' file is considered as Sitecore Package, (type #1)".FormatWith(packageFile), typeof(Product));
+          Log.Info("The '{0}' file is considered as Sitecore Package, (type #1)", packageFile);
           CacheManager.SetEntry("IsPackage", packageFile, "true");
 
           return ProfileSection.Result(packageManifest);
@@ -364,7 +250,7 @@
         if (FileSystem.FileSystem.Local.Zip.ZipContainsFile(packageFile, "metadata/sc_name.txt") &&
             FileSystem.FileSystem.Local.Zip.ZipContainsFile(packageFile, "installer/version"))
         {
-          Log.Info("The '{0}' file is considered as Sitecore Package, (type #2)".FormatWith(packageFile), typeof(Product));
+          Log.Info("The '{0}' file is considered as Sitecore Package, (type #2)", packageFile);
           CacheManager.SetEntry("IsPackage", packageFile, "true");
 
           return ProfileSection.Result(packageManifest);
@@ -378,7 +264,7 @@
 
     private static List<string> GetFileNamePatterns(IEnumerable<string> fileNamesRaw)
     {
-      using (new ProfileSection("Get manifest lookup folders", typeof(ManifestHelper)))
+      using (new ProfileSection("Get manifest lookup folders"))
       {
         ProfileSection.Argument("fileNamesRaw", fileNamesRaw);
 
@@ -411,7 +297,7 @@
 
     private static LookupFolder[] GetManifestLookupFolders(string packageFile)
     {
-      using (new ProfileSection("Get manifest lookup folders", typeof(ManifestHelper)))
+      using (new ProfileSection("Get manifest lookup folders"))
       {
         ProfileSection.Argument("packageFile", packageFile);
 
@@ -423,10 +309,10 @@
       }
     }
 
-    private static void HandleError(string path, IEnumerable<string> list, Exception ex)
+    private static void HandleError(Exception ex, string path, IEnumerable<string> list)
     {
       string str = list.Join(", ", "'", "'");
-      Log.Warn("Failed merging '{0}' with successfully merged {1}. {2}".FormatWith((object)path, (object)str, (object)ex.Message), typeof(ManifestHelper), ex);
+      Log.Warn(ex, "Failed merging '{0}' with successfully merged {1}. {2}", (object)path, (object)str, (object)ex.Message);
     }
 
     private static string TrimRevision(string fileName)

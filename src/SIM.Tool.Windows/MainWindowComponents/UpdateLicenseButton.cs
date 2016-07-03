@@ -4,7 +4,7 @@
   using SIM.Instances;
   using SIM.Tool.Base;
   using SIM.Tool.Base.Plugins;
-  using Sitecore.Diagnostics.Annotations;
+  using Sitecore.Diagnostics.Base.Annotations;
 
   [UsedImplicitly]
   public class UpdateLicenseButton : IMainWindowButton
@@ -13,7 +13,7 @@
 
     public bool IsEnabled(Window mainWindow, Instance instance)
     {
-      return instance != null;
+      return true;
     }
 
     public void OnClick(Window mainWindow, Instance instance)

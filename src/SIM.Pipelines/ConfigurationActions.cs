@@ -16,8 +16,10 @@ namespace SIM.Pipelines
   using SIM.Pipelines.InstallModules;
   using SIM.Pipelines.SitecoreWebservices;
   using SIM.Products;
-  using Sitecore.Diagnostics;
-  using Sitecore.Diagnostics.Annotations;
+  using Sitecore.Diagnostics.Base;
+  using Sitecore.Diagnostics.Base.Annotations;
+  using Sitecore.Diagnostics.Logging;
+  using SIM.Adapters.WebServer;
 
   #region
 
@@ -62,7 +64,7 @@ namespace SIM.Pipelines
 
         if (manifest == null)
         {
-          Log.Warn("The {0} doesn't have a manifest".FormatWith(module), typeof(ConfigurationActions));
+          Log.Warn("The {0} doesn't have a manifest", module);
           if (done != null)
           {
             done.Add(module);
@@ -74,7 +76,7 @@ namespace SIM.Pipelines
         Product instanceProduct = instance.Product;
         if (!module.IsMatchRequirements(instanceProduct))
         {
-          Log.Warn("The {0} doesn't suites for {1}".FormatWith(module, instanceProduct), typeof(ConfigurationActions));
+          Log.Warn("The {0} doesn't suites for {1}", module, instanceProduct);
           if (done != null)
           {
             done.Add(module);
@@ -93,7 +95,7 @@ namespace SIM.Pipelines
         XmlElement element = manifest.SelectSingleNode(xpath) as XmlElement;
         if (element == null)
         {
-          Log.Warn("Can't find rules root (the {0} element in the manifest of the {3} file){1}The manifest is: {1}{2}".FormatWith(xpath, Environment.NewLine, manifest.OuterXml, module.PackagePath), typeof(ConfigurationActions));
+          Log.Warn("Can't find rules root (the {0} element in the manifest of the {3} file){1}The manifest is: {1}{2}", xpath, Environment.NewLine, manifest.OuterXml, module.PackagePath);
           if (done != null)
           {
             done.Add(module);
@@ -116,7 +118,7 @@ namespace SIM.Pipelines
 
     public static Database GetMainDatabase(Instance instance, SqlConnectionStringBuilder connectionString)
     {
-      using (new ProfileSection("Get main database", typeof(ConfigurationActions)))
+      using (new ProfileSection("Get main database"))
       {
         ProfileSection.Argument("instance", instance);
         ProfileSection.Argument("connectionString", connectionString);
@@ -130,13 +132,13 @@ namespace SIM.Pipelines
         var localDBs =
           instance.AttachedDatabases.Where(
             d => d.ConnectionString.DataSource == sqlServerInstanceName).ToArray();
-        Log.Debug("localDbs.Length: " + localDBs.Length);
+        Log.Debug("localDbs.Length: {0}",  localDBs.Length);
 
         foreach (string databaseName in firstOrderDatabaseNames)
         {
           mainDatabase = localDBs.SingleOrDefault(d => d.Name == databaseName);
-          Log.Debug("databaseName: " + databaseName);
-          Log.Debug("mainDatabase!=null: " + (mainDatabase != null));
+          Log.Debug("databaseName: {0}",  databaseName);
+          Log.Debug("mainDatabase!=null: {0}",  mainDatabase != null);
           if (mainDatabase != null)
           {
             return ProfileSection.Result(mainDatabase);
@@ -263,6 +265,30 @@ namespace SIM.Pipelines
       client.Save(xml, "master", credentials);
     }
 
+    private static void AddSiteBinding(string instanceName, XmlElement action)
+    {
+      Assert.ArgumentNotNullOrEmpty(instanceName, "instanceName");
+      Assert.ArgumentNotNull(action, "action");
+
+      var host = action.GetAttribute("host");
+      if (host.IsNullOrEmpty())
+      {
+        return;
+      }
+
+      var protocol = action.HasAttribute("protocol") ? action.GetAttribute("protocol") : "http";
+      int port;
+
+      if (!action.HasAttribute("port") || !int.TryParse(action.GetAttribute("port"), out port))
+      {
+        port = 80;
+      }
+
+      var ip = action.HasAttribute("ip") ? action.GetAttribute("ip") : "*";
+
+      WebServerManager.AddHostBinding(instanceName, new BindingInfo(protocol, host, port, ip));
+    }
+
     private static string ChangeWebRootToActual(string path, string webRootName)
     {
       if (path.StartsWith("/Website", true, CultureInfo.InvariantCulture) || path.StartsWith(@"\Website", true, CultureInfo.InvariantCulture))
@@ -309,6 +335,13 @@ namespace SIM.Pipelines
             FileSystem.FileSystem.Local.File.WriteAllText(path, text);
             break;
           }
+
+          case "write":
+            {                                                            
+              var target = child.InnerXml;
+              FileSystem.FileSystem.Local.File.WriteAllText(path, XmlDocumentEx.LoadXml(target).ToPrettyXmlString());
+              break;
+            }
 
           case "append":
           {
@@ -571,7 +604,7 @@ namespace SIM.Pipelines
             XmlNode parentNode = config.SelectSingleNode(xpath);
             if (parentNode == null)
             {
-              Log.Warn("[InstallActions, Append] The {0} element isn't found".FormatWith(xpath), typeof(ConfigurationActions));
+              Log.Warn("[InstallActions, Append] The {0} element isn't found", xpath);
               break;
             }
 
@@ -591,14 +624,14 @@ namespace SIM.Pipelines
             string xpath = instruction.GetAttribute("xpath");
             if (string.IsNullOrEmpty(xpath))
             {
-              Log.Warn("The xpath attribute is missing in the {0} instruction (outer xml: {1})".FormatWith(instruction.Name, instruction.OuterXml), typeof(ConfigurationActions));
+              Log.Warn("The xpath attribute is missing in the {0} instruction (outer xml: {1})", instruction.Name, instruction.OuterXml);
               continue;
             }
 
             XmlElement targetElement = (XmlElement)config.SelectSingleNode(xpath);
             if (targetElement == null)
             {
-              Log.Warn("Can't find the {0} element in the {1} file".FormatWith(xpath, config.FilePath), typeof(ConfigurationActions));
+              Log.Warn("Can't find the {0} element in the {1} file", xpath, config.FilePath);
               continue;
             }
 
@@ -624,14 +657,14 @@ namespace SIM.Pipelines
             string xpath = instruction.GetAttribute("xpath");
             if (string.IsNullOrEmpty(xpath))
             {
-              Log.Warn("The xpath attribute is missing in the {0} instruction (outer xml: {1})".FormatWith(instruction.Name, instruction.OuterXml), typeof(ConfigurationActions));
+              Log.Warn("The xpath attribute is missing in the {0} instruction (outer xml: {1})", instruction.Name, instruction.OuterXml);
               continue;
             }
 
             XmlNodeList nodes = config.SelectNodes(xpath);
             if (nodes == null || nodes.Count == 0)
             {
-              Log.Warn("Can't find the {0} nodes in the {1} file".FormatWith(xpath, config.FilePath), typeof(ConfigurationActions));
+              Log.Warn("Can't find the {0} nodes in the {1} file", xpath, config.FilePath);
               continue;
             }
 
@@ -640,7 +673,7 @@ namespace SIM.Pipelines
               XmlNode parent = targetElement.ParentNode;
               if (parent == null)
               {
-                Log.Warn("Can't find the parent node of the {0} element of the {1} file".FormatWith(xpath, config.FilePath), typeof(ConfigurationActions));
+                Log.Warn("Can't find the parent node of the {0} element of the {1} file", xpath, config.FilePath);
                 continue;
               }
 
@@ -650,38 +683,92 @@ namespace SIM.Pipelines
 
             break;
           }
+                    
+          case "disable":
+          {
+            string fromFileName = instruction.GetAttribute("path");
+            if (!string.IsNullOrEmpty(fromFileName))
+            {
+              var includeFolderPath = Path.Combine(instance.WebRootPath, "app_config\\include");
+              var fromPath = Path.Combine(includeFolderPath, fromFileName);
+              if (!File.Exists(fromPath))
+              {
+                Log.Warn("The {0} file not found", fromPath);
+
+                break;
+              }
+
+              var toPath = fromPath + ".disabled";
+              RenameFile(fromPath, toPath, true);
+            }
+
+            break;
+          }
+
+          case "enable":
+          {
+            string fromFileName = instruction.GetAttribute("path");
+            if (!string.IsNullOrEmpty(fromFileName))
+            {
+              var includeFolderPath = Path.Combine(instance.WebRootPath, "app_config\\include");
+              var fromPath = Path.Combine(includeFolderPath, fromFileName);
+              if (!File.Exists(fromPath))
+              {
+                Log.Warn("The {0} file not found", fromPath);
+
+                break;
+              }
+
+              var configPostfix = ".config";
+              if (Path.GetExtension(fromPath).EqualsIgnoreCase(configPostfix))
+              {
+                break;
+              }
+
+              var fileName = Path.GetFileName(fromPath);
+              var dir = Path.GetDirectoryName(fromPath);
+              var index = fileName.LastIndexOf(configPostfix, StringComparison.OrdinalIgnoreCase);
+              if (index > 0)
+              {
+                fileName = fileName.Substring(0, index + configPostfix.Length);
+                RenameFile(fromPath, Path.Combine(dir, fileName), true);
+                break;
+              }
+
+              foreach (var postfix in new[] { ".example", ".sample", ".disabled", ".remove", ".delete", ".ignore" })
+              {
+                var index2 = fileName.LastIndexOf(postfix, StringComparison.OrdinalIgnoreCase);
+                if (index2 <= 0)
+                {
+                  continue;
+                }
+
+                fileName = fileName.Substring(0, index2 + postfix.Length);
+                RenameFile(fromPath, Path.Combine(dir, fileName), true);
+                break;
+              }
+
+              fileName += ".config";
+              RenameFile(fromPath, Path.Combine(dir, fileName), true);
+            }
+
+            break;
+          }
 
           case "rename":
           {
-            var skipOnError = instruction.GetAttribute("skipOnError");
-            string fromFileName = instruction.GetAttribute("from");
-            string toFileName = instruction.GetAttribute("to");
+            var skipOnErrorText = instruction.GetAttribute("skipOnError");
+            var skipOnError = skipOnErrorText.EqualsIgnoreCase("true");
+            var fromFileName = instruction.GetAttribute("from");
+            var toFileName = instruction.GetAttribute("to");
 
             if (!string.IsNullOrEmpty(fromFileName) && !string.IsNullOrEmpty(toFileName))
             {
-              string includeFolderPath = Path.Combine(instance.WebRootPath, "app_config\\include");
-              string fromPath = Path.Combine(includeFolderPath, fromFileName);
-              string toPath = Path.Combine(includeFolderPath, toFileName);
+              var includeFolderPath = Path.Combine(instance.WebRootPath, "app_config\\include");
+              var fromPath = Path.Combine(includeFolderPath, fromFileName);
+              var toPath = Path.Combine(includeFolderPath, toFileName);
 
-              try
-              {
-                if (!FileSystem.FileSystem.Local.File.Exists(fromPath) && FileSystem.FileSystem.Local.File.Exists(toPath))
-                {
-                  Log.Warn("The moving does not seem to be needed", typeof(ConfigurationActions));
-                  break;
-                }
-
-                FileSystem.FileSystem.Local.File.Move(fromPath, toPath);
-              }
-              catch (Exception ex)
-              {
-                if (!skipOnError.EqualsIgnoreCase("true"))
-                {
-                  throw;
-                }
-
-                Log.Error("Cannot rename file {0}".FormatWith(fromPath), typeof(ConfigurationActions), ex);
-              }
+              RenameFile(fromPath, toPath, skipOnError);
             }
 
             break;
@@ -692,13 +779,38 @@ namespace SIM.Pipelines
       config.Save();
     }
 
+    private static void RenameFile(string fromPath, string toPath, bool skipOnError)
+    {
+      try
+      {
+        if (!FileSystem.FileSystem.Local.File.Exists(fromPath) && FileSystem.FileSystem.Local.File.Exists(toPath))
+        {
+          Log.Warn("The moving does not seem to be needed");
+          return;
+        }
+
+        FileSystem.FileSystem.Local.File.Move(fromPath, toPath);
+      }
+      catch (Exception ex)
+      {
+        if (!skipOnError)
+        {
+          throw;
+        }
+
+        Log.Error(ex, "Cannot rename file {0} to {1}", fromPath, toPath);
+      }
+    }
+
     private static void ProcessActions(Instance instance, SqlConnectionStringBuilder connectionString, 
       IPipelineController controller, Product module, Dictionary<string, string> variables, 
       XmlElement actionsElement)
     {
       // made replacement
       actionsElement.InnerXml = variables.Aggregate(actionsElement.InnerXml, 
-        (result, variable) => result.Replace(variable.Key, variable.Value)).Replace("{InstanceName}", instance.Name);
+        (result, variable) => result.Replace(variable.Key, variable.Value))
+        .Replace("{InstanceName}", instance.Name)
+        .Replace("{InstanceHost}", instance.HostNames.First());
 
       var actions = actionsElement.ChildNodes.OfType<XmlElement>();
       var conditionEvaluator = new ConditionEvaluator(variables);
@@ -740,6 +852,20 @@ namespace SIM.Pipelines
             break;
           }
 
+          case "addSiteBinding":
+          {
+            AddSiteBinding(instance.Name, action);
+           
+            break;
+          }
+
+          case "addHostName":
+          {
+            Hosts.Append(action.GetAttribute("hostName"));
+
+            break;
+          }
+
           case "config":
           {
             string configPath = action.GetAttribute("path");
@@ -752,9 +878,7 @@ namespace SIM.Pipelines
             }
             catch (XmlDocumentEx.FileIsMissingException ex)
             {
-              Log.Warn(
-                "The path attribute is specified (path: {0}) but the file doesn't exist".FormatWith(configPath), 
-                typeof(ConfigurationActions), ex);
+              Log.Warn(ex, "The path attribute is specified (path: {0}) but the file doesn't exist", configPath);
             }
 
             break;
@@ -783,14 +907,6 @@ namespace SIM.Pipelines
           {
             InstanceHelper.StartInstance(instance);
             SetRestrictingPlaceholders(action.GetAttribute("names"), GetWebServiceUrl(instance));
-            break;
-          }
-
-          case "custom":
-          {
-            var typeName = action.GetAttribute("type").EmptyToNull().IsNotNull("The type attribute is missing in the <custom> install action");
-            var obj = (IPackageInstallActions)ReflectionUtil.CreateObject(typeName);
-            obj.Execute(instance, module);
             break;
           }
 

@@ -9,13 +9,17 @@ namespace SIM.Pipelines
   using SIM.Adapters.SqlServer;
   using SIM.Adapters.WebServer;
   using SIM.Pipelines.Install;
-  using Sitecore.Diagnostics;
-  using Sitecore.Diagnostics.Annotations;
+  using Sitecore.Diagnostics.Base;
+  using Sitecore.Diagnostics.Base.Annotations;
+  using Sitecore.Diagnostics.Logging;
 
   #endregion
 
   public static class AttachDatabasesHelper
   {
+    // total number of steps in entire install/reinstall wizard without this one is around 5000, so we can assume attaching databases takes 5% so 250
+    public const int StepsCount = 250;
+
     #region Public methods
 
     public static void AttachDatabase(string name, string databasesFolderPath, ConnectionString connectionString, SqlConnectionStringBuilder defaultConnectionString, IPipelineController controller)
@@ -28,19 +32,23 @@ namespace SIM.Pipelines
         DatabaseFilenameHook(Path.Combine(databasesFolderPath, connectionString.DefaultFileName), 
           connectionString.Name.Replace("yafnet", "forum"), databasesFolderPath);
 
-      if (!IsRemoteSqlServer())
+      if (!FileSystem.FileSystem.Local.File.Exists(databasePath))
       {
-        if (!FileSystem.FileSystem.Local.File.Exists(databasePath))
+        var file = Path.GetFileName(databasePath);
+        if (connectionString.Name.EqualsIgnoreCase("reporting"))
         {
-          var file = Path.GetFileName(databasePath);
-          if (file.EqualsIgnoreCase("sitecore.reporting.mdf"))
-          {
-            databasePath = Path.Combine(Path.GetDirectoryName(databasePath), "Sitecore.Analytics.mdf");
-          }
+          databasePath = Path.Combine(Path.GetDirectoryName(databasePath), "Sitecore.Analytics.mdf");
+        } else if (connectionString.Name.EqualsIgnoreCase("exm.dispatch"))
+        {
+          databasePath = Path.Combine(Path.GetDirectoryName(databasePath), "Sitecore.Exm.mdf");
         }
-
-        FileSystem.FileSystem.Local.File.AssertExists(databasePath, databasePath + " file doesn't exist");
+        else if (connectionString.Name.EqualsIgnoreCase("session"))
+        {
+          databasePath = Path.Combine(Path.GetDirectoryName(databasePath), "Sitecore.Sessions.mdf");
+        }
       }
+
+      FileSystem.FileSystem.Local.File.AssertExists(databasePath, databasePath + " file doesn't exist");
 
       if (SqlServerManager.Instance.DatabaseExists(databaseName, defaultConnectionString))
       {
@@ -75,7 +83,7 @@ namespace SIM.Pipelines
             throw;
           }
 
-          Log.Warn("Attaching reporting.secondary database failed. Skipping...", typeof(AttachDatabasesHelper), ex);
+          Log.Warn(ex, "Attaching reporting.secondary database failed. Skipping...");
         }
       }
     }
@@ -86,12 +94,7 @@ namespace SIM.Pipelines
       Assert.ArgumentNotNull(databasePath, "databasePath");
       Assert.ArgumentNotNull(databaseName, "databaseName");
 
-      if (IsRemoteSqlServer())
-      {
-        databasePath = GetLocalDatabasePathOnRemoteServer(databasePath);
-      }
-
-      if (!FileSystem.FileSystem.Local.File.Exists(databasePath) && !IsRemoteSqlServer())
+      if (!FileSystem.FileSystem.Local.File.Exists(databasePath))
       {
         string[] files = FileSystem.FileSystem.Local.Directory.GetFiles(databasesFolderPath, "*" + databaseName + ".mdf");
         string file = files.SingleOrDefault();
@@ -102,37 +105,6 @@ namespace SIM.Pipelines
       }
 
       return databasePath;
-    }
-
-    public static string GetRemoteDatabaseFilePath(string databaseFilePath)
-    {
-      Assert.ArgumentNotNullOrEmpty(databaseFilePath, "databasesFilePath");
-      Assert.IsTrue(Path.IsPathRooted(databaseFilePath), "The path is not rooted (" + databaseFilePath + ")");
-
-      var remoteDatabaseServerName = SqlServerManager.Settings.CoreSqlServerRemoteServerName.Value;
-      var virtualPath = FileSystem.FileSystem.Local.Directory.GetVirtualPath(databaseFilePath);
-      var value = @"\\{0}\{1}\{2}".FormatWith(remoteDatabaseServerName, ReplaceRemoteServerVariable(databaseFilePath).TrimEnd('\\'), virtualPath);
-      return value;
-    }
-
-    public static bool IsRemoteSqlServer()
-    {
-      return !string.IsNullOrEmpty(SqlServerManager.Settings.CoreSqlServerRemoteServerName.Value.Trim());
-    }
-
-    public static void MoveDatabases(string databasesFolderPath)
-    {
-      if (AttachDatabasesHelper.IsRemoteSqlServer())
-      {
-        foreach (var filePath in FileSystem.FileSystem.Local.Directory.GetFiles(databasesFolderPath))
-        {
-          var remoteDatabaseFilePath = AttachDatabasesHelper.GetRemoteDatabaseFilePath(filePath);
-          FileSystem.FileSystem.Local.Directory.Ensure(Path.GetDirectoryName(remoteDatabaseFilePath));
-          FileSystem.FileSystem.Local.File.Move(filePath, remoteDatabaseFilePath);
-        }
-
-        FileSystem.FileSystem.Local.Directory.DeleteIfExists(databasesFolderPath);
-      }
     }
 
     public static string ResolveConflict(SqlConnectionStringBuilder defaultConnectionString, ConnectionString connectionString, string databasePath, string databaseName, IPipelineController controller)
@@ -185,13 +157,6 @@ namespace SIM.Pipelines
 
     #region Private methods
 
-    private static string GetLocalDatabasePathOnRemoteServer(string databasePath)
-    {
-      var virtualPath = FileSystem.FileSystem.Local.Directory.GetVirtualPath(databasePath);
-      databasePath = ReplaceRemoteServerVariable(databasePath).TrimStart("\\").Replace("$\\", ":\\").EnsureEnd("\\") + virtualPath;
-      return databasePath;
-    }
-
     [NotNull]
     private static string GetMongoConnectionString([NotNull] string connectionStringName, [NotNull] string instanceName)
     {
@@ -228,12 +193,6 @@ namespace SIM.Pipelines
       }
 
       throw new InvalidOperationException("Something weird happen... Do you really have '{0}' file?".FormatWith(databaseName + "_" + K));
-    }
-
-    private static string ReplaceRemoteServerVariable(string databasePath)
-    {
-      var remoteFolderName = SqlServerManager.Settings.CoreSqlServerRemoteFolderName.Value;
-      return remoteFolderName.Replace("{DRIVE_LETTER}", Path.GetPathRoot(databasePath)[0]);
     }
 
     [NotNull]

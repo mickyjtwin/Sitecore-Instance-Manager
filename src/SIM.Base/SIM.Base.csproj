@@ -10,7 +10,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>SIM</RootNamespace>
     <AssemblyName>SIM.Base</AssemblyName>
-    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile />
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\</SolutionDir>
@@ -23,6 +23,7 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -31,16 +32,28 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Ionic.Zip">
-      <HintPath>..\packages\DotNetZip.1.9.1.8\lib\net20\Ionic.Zip.dll</HintPath>
+    <Reference Include="Ionic.Zip.Reduced, Version=1.9.1.8, Culture=neutral, PublicKeyToken=edbe51ad942a3f5c, processorArchitecture=MSIL">
+      <HintPath>..\packages\DotNetZip.Reduced.1.9.1.8\lib\net20\Ionic.Zip.Reduced.dll</HintPath>
+      <Private>True</Private>
     </Reference>
-    <Reference Include="log4net">
-      <HintPath>..\packages\log4net.2.0.3\lib\net40-full\log4net.dll</HintPath>
+    <Reference Include="Newtonsoft.Json, Version=8.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\packages\Newtonsoft.Json.8.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
+      <Private>True</Private>
     </Reference>
-    <Reference Include="Sitecore.Diagnostics.Base">
-      <HintPath>..\packages\Sitecore.Diagnostics.Base.1.0.0.14\lib\net35\Sitecore.Diagnostics.Base.dll</HintPath>
+    <Reference Include="Sitecore.Diagnostics.Base, Version=1.0.0.0, Culture=neutral, PublicKeyToken=2a430da507ea8b02, processorArchitecture=MSIL">
+      <HintPath>..\packages\Sitecore.Diagnostics.Base.1.0.0.24\lib\net35\Sitecore.Diagnostics.Base.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Sitecore.Diagnostics.InformationService.Client.Core, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Sitecore.Diagnostics.InformationService.Client.Core.1.3.0.6\lib\net40\Sitecore.Diagnostics.InformationService.Client.Core.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Sitecore.Diagnostics.Logging, Version=1.0.1.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Sitecore.Diagnostics.Logging.1.0.1.0\lib\net40\Sitecore.Diagnostics.Logging.dll</HintPath>
+      <Private>True</Private>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.configuration" />
@@ -56,18 +69,6 @@
     <Compile Include="AdvancedSettingsManager.cs" />
     <Compile Include="ApplicationManager.cs" />
     <Compile Include="CacheManager.cs" />
-    <Compile Include="CustomDataStoring\Bucket.cs" />
-    <Compile Include="CustomDataStoring\FileSystemBucketStorage.cs" />
-    <Compile Include="CustomDataStoring\IBucketStorage.cs" />
-    <Compile Include="CustomDataStoring\IDataBox.cs" />
-    <Compile Include="CustomDataStoring\PermanentDataManager.cs" />
-    <Compile Include="CustomDataStoring\PermanentInfoStorage.cs" />
-    <Compile Include="CustomDataStoring\SavePolicies\ImmediateSaveStrategy.cs" />
-    <Compile Include="CustomDataStoring\SavePolicies\IntervalSaveStrategy.cs" />
-    <Compile Include="CustomDataStoring\SavePolicies\ISaveStrategy.cs" />
-    <Compile Include="CustomDataStoring\SavePolicies\ManualSaveStrategy.cs" />
-    <Compile Include="CustomDataStoring\SavePolicies\RubberDelaySaveStrategy.cs" />
-    <Compile Include="CustomDataStoring\StorageBox.cs" />
     <Compile Include="DataObject.cs" />
     <Compile Include="DataObjectBase.cs" />
     <Compile Include="EventHelper.cs" />
@@ -83,8 +84,9 @@
     <Compile Include="FileSystem\UncSecurityProvider.cs" />
     <Compile Include="FileSystem\UncZipProvider.cs" />
     <Compile Include="IAdvancedSettingsStorage.cs" />
-    <Compile Include="Log.cs" />
-    <Compile Include="LogFileAppender.cs" />
+    <Compile Include="IProfile.cs" />
+    <Compile Include="Null.cs" />
+    <Compile Include="Parameters.cs" />
     <Compile Include="Pipelines\Pipeline.cs" />
     <Compile Include="Pipelines\PipelineController.cs" />
     <Compile Include="Pipelines\PipelineDefinition.cs" />
@@ -99,7 +101,6 @@
     <Compile Include="Pipelines\Processors\SingleProcessorDefinition.cs" />
     <Compile Include="Pipelines\Step.cs" />
     <Compile Include="Pipelines\StepDefinition.cs" />
-    <Compile Include="ProfileSection.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Properties\BResources.Designer.cs">
       <DependentUpon>BResources.resx</DependentUpon>
@@ -122,13 +123,10 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Log.config">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      <SubType>Designer</SubType>
-    </Content>
+    <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="packages.config" />
+    <Folder Include="Extensions\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

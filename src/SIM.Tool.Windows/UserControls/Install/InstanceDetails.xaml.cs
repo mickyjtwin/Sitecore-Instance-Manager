@@ -7,6 +7,7 @@
   using System.Linq;
   using System.Windows;
   using System.Windows.Controls;
+  using System.Windows.Controls.Primitives;
   using System.Xml;
   using SIM.Adapters.SqlServer;
   using SIM.Adapters.WebServer;
@@ -16,8 +17,9 @@
   using SIM.Tool.Base.Pipelines;
   using SIM.Tool.Base.Profiles;
   using SIM.Tool.Base.Wizards;
-  using Sitecore.Diagnostics;
-  using Sitecore.Diagnostics.Annotations;
+  using Sitecore.Diagnostics.Base;
+  using Sitecore.Diagnostics.Base.Annotations;
+  using Sitecore.Diagnostics.Logging;
 
   #region
 
@@ -333,7 +335,7 @@
       this.SelectLast(this.ProductRevision);
     }
 
-    private void Select([NotNull] ComboBox element, [NotNull] string value)
+    private void Select([NotNull] Selector element, [NotNull] string value)
     {
       Assert.ArgumentNotNull(element, "element");
       Assert.ArgumentNotNull(value, "value");
@@ -372,7 +374,7 @@
       }
     }
 
-    private void SelectByValue([NotNull] ComboBox element, string value)
+    private void SelectByValue([NotNull] Selector element, string value)
     {
       Assert.ArgumentNotNull(element, "element");
 
@@ -405,9 +407,9 @@
         {
           foreach (var item in element.Items)
           {
-            if (item is ComboBoxItem)
+            if (item is ContentControl)
             {
-              if ((item as ComboBoxItem).Content.ToString().EqualsIgnoreCase(value, true))
+              if ((item as ContentControl).Content.ToString().EqualsIgnoreCase(value, true))
               {
                 element.SelectedItem = item;
                 break;
@@ -427,7 +429,7 @@
       }
     }
 
-    private void SelectFirst([NotNull] ComboBox element)
+    private void SelectFirst([NotNull] Selector element)
     {
       Assert.ArgumentNotNull(element, "element");
 
@@ -437,7 +439,7 @@
       }
     }
 
-    private void SelectLast([NotNull] ComboBox element)
+    private void SelectLast([NotNull] Selector element)
     {
       Assert.ArgumentNotNull(element, "element");
 
@@ -447,7 +449,7 @@
       }
     }
 
-    private void SelectProductByValue([CanBeNull] ComboBox element, [NotNull] string value)
+    private void SelectProductByValue([CanBeNull] Selector element, [NotNull] string value)
     {
       Assert.ArgumentNotNull(value, "value");
 

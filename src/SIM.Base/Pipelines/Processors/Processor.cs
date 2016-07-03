@@ -3,8 +3,9 @@
   using System;
   using System.Collections.Generic;
   using System.Threading;
-  using Sitecore.Diagnostics;
-  using Sitecore.Diagnostics.Annotations;
+  using Sitecore.Diagnostics.Base;
+  using Sitecore.Diagnostics.Base.Annotations;
+  using Sitecore.Diagnostics.Logging;
 
   #region
 
@@ -81,7 +82,7 @@
         }
         catch (Exception ex)
         {
-          Log.Warn("An error occurred during calculating processor.IsDone property", this, ex);
+          Log.Warn(ex, "An error occurred during calculating processor.IsDone property");
 
           return false;
         }
@@ -140,7 +141,7 @@
             controller.ProcessorCrashed(ex.Message);
           }
 
-          Log.Error("Processor of type '{0}' (a part of the '{1}' pipeline) failed. {2}".FormatWith(this.ProcessorDefinition.Type.FullName, this.ProcessorDefinition.OwnerPipelineName, ex.Message), typeof(Processor), ex);
+          Log.Error(ex, "Processor of type '{0}' failed. {1}", this.ProcessorDefinition.Type.FullName, ex.Message);
           return false;
         }
       }

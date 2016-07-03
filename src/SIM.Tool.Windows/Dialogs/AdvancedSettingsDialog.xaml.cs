@@ -7,8 +7,9 @@
   using System.Windows.Input;
   using SIM.Tool.Base;
   using SIM.Tool.Base.Profiles;
-  using Sitecore.Diagnostics;
-  using Sitecore.Diagnostics.Annotations;
+  using Sitecore.Diagnostics.Base;
+  using Sitecore.Diagnostics.Base.Annotations;
+  using SIM.Core;
 
   #region
 
@@ -23,10 +24,10 @@
       // workaround for #179
       var types = new[]
       {
-        typeof(SIM.Tool.Base.AppSettings), 
+        typeof(SIM.Core.CoreAppSettings), 
+        typeof(SIM.Tool.Base.WinAppSettings), 
         typeof(SIM.Tool.Windows.Properties.Settings), 
         typeof(SIM.Tool.Windows.WindowsSettings), 
-        typeof(SIM.Instances.InstanceManager.Settings), 
         typeof(SIM.Pipelines.Install.Settings), 
         typeof(SIM.Adapters.SqlServer.SqlServerManager.Settings), 
         typeof(WebRequestHelper.Settings)
@@ -100,12 +101,12 @@
 
     private void OpenDocumentation([CanBeNull] object sender, [CanBeNull] RoutedEventArgs e)
     {
-      WindowHelper.OpenInBrowser("https://bitbucket.org/alienlab/sitecore-instance-manager/wiki/Home", true);
+      CoreApp.OpenInBrowser("https://github.com/sitecore/sitecore-instance-manager/wiki/Advanced", true);
     }
 
     private void OpenFile(object sender, RoutedEventArgs e)
     {
-      WindowHelper.OpenFolder(ApplicationManager.DataFolder);
+      CoreApp.OpenFolder(ApplicationManager.DataFolder);
     }
 
     private void SaveSettings()

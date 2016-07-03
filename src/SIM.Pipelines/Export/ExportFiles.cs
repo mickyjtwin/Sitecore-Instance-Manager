@@ -5,8 +5,8 @@
   using System.Linq;
   using System.Xml;
   using SIM.Adapters.WebServer;
-  using Sitecore.Diagnostics;
-  using Sitecore.Diagnostics.Annotations;
+  using Sitecore.Diagnostics.Base;
+  using Sitecore.Diagnostics.Base.Annotations;
 
   [UsedImplicitly]
   public class ExportFiles : ExportProcessor
@@ -27,7 +27,6 @@
       Assert.ArgumentNotNull(args, "args");
 
       var instance = args.Instance;
-      var rootFolder = instance.RootPath;
       var webRootPath = instance.WebRootPath;
       var webRootName = instance.WebRootPath.Split('\\')[instance.WebRootPath.Split('\\').Length - 1];
       var websiteFolder = Path.Combine(args.Folder, webRootName);

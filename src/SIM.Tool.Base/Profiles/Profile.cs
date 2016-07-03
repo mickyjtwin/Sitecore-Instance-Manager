@@ -1,21 +1,21 @@
 ﻿namespace SIM.Tool.Base.Profiles
 {
   using System;
-  using Sitecore.Diagnostics;
-  using Sitecore.Diagnostics.Annotations;
+  using Sitecore.Diagnostics.Base;
+  using Sitecore.Diagnostics.Base.Annotations;
 
   #region
 
   #endregion
 
-  public class Profile : DataObject, ICloneable
+  public class Profile : DataObject, IProfile, ICloneable
   {
     #region Properties
 
     #region Public properties
 
     [NotNull]
-    public string AdvancedSettings
+    public virtual string AdvancedSettings
     {
       get
       {
@@ -31,7 +31,7 @@
     }
 
     [NotNull]
-    public string ConnectionString
+    public virtual string ConnectionString
     {
       get
       {
@@ -47,7 +47,7 @@
     }
 
     [NotNull]
-    public string InstancesFolder
+    public virtual string InstancesFolder
     {
       get
       {
@@ -63,7 +63,7 @@
     }
 
     [NotNull]
-    public string License
+    public virtual string License
     {
       get
       {
@@ -79,7 +79,7 @@
     }
 
     [NotNull]
-    public string LocalRepository
+    public virtual string LocalRepository
     {
       get
       {
@@ -94,25 +94,14 @@
       }
     }
 
-    [NotNull]
-    public string Plugins
-    {
-      get
-      {
-        return this.GetString("Plugins") ?? string.Empty;
-      }
-
-      set
-      {
-        Assert.ArgumentNotNull(value, "value");
-
-        this.SetValue("Plugins", value);
-      }
-    }
-
     #endregion
 
     #region Protected methods
+
+    public void Save()
+    {
+      throw new NotImplementedException("Not required here");
+    }
 
     protected void ValidateInstancesFolder()
     {
@@ -141,8 +130,7 @@
         ConnectionString = this.ConnectionString, 
         InstancesFolder = this.InstancesFolder, 
         License = this.License, 
-        LocalRepository = this.LocalRepository, 
-        Plugins = this.Plugins
+        LocalRepository = this.LocalRepository
       };
     }
 

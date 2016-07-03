@@ -2,10 +2,12 @@ namespace SIM.Tool.Windows.MainWindowComponents
 {
   using System.IO;
   using System.Windows;
+  using SIM.Core.Common;
   using SIM.Instances;
   using SIM.Tool.Base;
   using SIM.Tool.Base.Plugins;
-  using Sitecore.Diagnostics.Annotations;
+  using Sitecore.Diagnostics.Base.Annotations;
+  using SIM.Core;
 
   [UsedImplicitly]
   public class OpenFileButton : IMainWindowButton
@@ -34,6 +36,8 @@ namespace SIM.Tool.Windows.MainWindowComponents
 
     public void OnClick(Window mainWindow, Instance instance)
     {
+      Analytics.TrackEvent("OpenFile");
+
       if (instance != null)
       {
         string filePath = this.FilePath.StartsWith("/") ? Path.Combine(instance.WebRootPath, this.FilePath.Substring(1)) : this.FilePath;
@@ -42,11 +46,11 @@ namespace SIM.Tool.Windows.MainWindowComponents
         string editor = WindowsSettings.AppToolsConfigEditor.Value;
         if (!string.IsNullOrEmpty(editor))
         {
-          WindowHelper.RunApp(editor, filePath);
+          CoreApp.RunApp(editor, filePath);
         }
         else
         {
-          WindowHelper.OpenFile(filePath);
+          CoreApp.OpenFile(filePath);
         }
       }
     }

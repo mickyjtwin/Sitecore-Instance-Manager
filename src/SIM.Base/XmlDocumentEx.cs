@@ -1,15 +1,15 @@
-﻿using System;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Xml;
-using Sitecore.Diagnostics;
-using Sitecore.Diagnostics.Annotations;
-
-namespace SIM
+﻿namespace SIM
 {
-
   #region
+
+  using System;
+  using System.IO;
+  using System.Linq;
+  using System.Text;
+  using System.Xml;
+  using Sitecore.Diagnostics.Base;
+  using Sitecore.Diagnostics.Base.Annotations;
+  using Sitecore.Diagnostics.Logging;
 
   #endregion
 
@@ -50,7 +50,7 @@ namespace SIM
       }
       catch (Exception ex)
       {
-        Log.Warn("Cannot load xml: {0}. {1}\r\n{2}".FormatWith(xml, ex.Message, Environment.StackTrace), typeof(XmlDocumentEx), ex);
+        Log.Warn(ex, "Cannot load xml: {0}. {1}\r\n{2}", xml, ex.Message, Environment.StackTrace);
         return null;
       }
     }
@@ -86,7 +86,8 @@ namespace SIM
 
     #region Public methods
 
-    public static XmlDocumentEx LoadFile(string path)
+    [NotNull]
+    public static XmlDocumentEx LoadFile([NotNull] string path)
     {
       Assert.ArgumentNotNull(path, "path");
       if (!FileSystem.FileSystem.Local.File.Exists(path))
@@ -98,6 +99,25 @@ namespace SIM
       {
         FilePath = path
       };
+      document.Load(path);
+      return document;
+    }
+
+    [CanBeNull]
+    public static XmlDocumentEx LoadFileSafe([NotNull] string path)
+    {
+      Assert.ArgumentNotNull(path, "path");
+
+      if (!FileSystem.FileSystem.Local.File.Exists(path))
+      {
+        return null;
+      }
+
+      var document = new XmlDocumentEx
+      {
+        FilePath = path
+      };
+
       document.Load(path);
       return document;
     }
@@ -249,5 +269,17 @@ namespace SIM
     }
 
     #endregion
+
+    public string ToPrettyXmlString()
+    {
+      var sw = new StringWriter();
+      var xml = new XmlTextWriter(sw);
+      xml.Formatting = Formatting.Indented;
+      xml.Indentation = 2;
+      xml.IndentChar = ' ';
+      this.Save(xml);
+
+      return sw.ToString();
+    }
   }
 }

@@ -1,41 +1,45 @@
-﻿#region Usings
-
-using System;
-using System.Diagnostics;
-using System.IO;
-using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Threading;
-using System.Windows;
-using System.Xml;
-using SIM.Adapters.SqlServer;
-using SIM.Instances;
-using SIM.Pipelines;
-using SIM.Pipelines.Processors;
-using SIM.Tool.Base;
-using SIM.Tool.Base.Plugins;
-using SIM.Tool.Base.Profiles;
-using SIM.Tool.Base.Runtime;
-using SIM.Tool.Windows;
-using SIM.Tool.Wizards;
-using Sitecore.Diagnostics;
-using Sitecore.Diagnostics.Annotations;
-using File = System.IO.File;
-
-#endregion
-
-// ReSharper disable HeuristicUnreachableCode
+﻿// ReSharper disable HeuristicUnreachableCode
 // ReSharper disable CSharpWarnings::CS0162
+
+using System.Net;
+
 namespace SIM.Tool
 {
+  using System;
+  using System.ComponentModel;
+  using System.Diagnostics;
+  using System.IO;
+  using System.Linq;
+  using System.Reflection;
+  using System.Runtime.CompilerServices;
+  using System.Security.Principal;
+  using System.ServiceProcess;
+  using System.Windows;
+  using System.Xml;
+  using SIM.Adapters.SqlServer;
+  using SIM.Core;
+  using SIM.Core.Common;
+  using SIM.Instances;
+  using SIM.Pipelines;
+  using SIM.Pipelines.Processors;
+  using SIM.Tool.Base;
+  using SIM.Tool.Base.Profiles;
+  using SIM.Tool.Windows;
+  using Sitecore.Diagnostics.Base;
+  using Sitecore.Diagnostics.Base.Annotations;
+  using Sitecore.Diagnostics.Logging;
+  using SIM.Tool.Base.Wizards;
+  using File = System.IO.File;
+
   public partial class App
   {
     #region Fields
 
-    public static readonly int APP_DUPLICATE_EXIT_CODE = -8;
-    public static readonly int APP_NO_MAIN_WINDOW = -44;
-    public static readonly int APP_PIPELINES_ERROR = -22;
-    private static readonly string AppLogsMessage = "The application will be suspended, look at the " + Log.LogFilePath + " log file to find out what has happened";
+    private static readonly string AppLogsMessage = "The application will be suspended, look at the " + ApplicationManager.LogsFolder + " log file to find out what has happened";
+
+    #endregion
+
+    #region Properties
 
     #endregion
 
@@ -59,51 +63,93 @@ namespace SIM.Tool
 
     #region Protected methods
 
-    protected override void OnExit(ExitEventArgs e)
-    {
-      LifeManager.ReleaseSingleInstanceLock();
-      base.OnExit(e);
-    }
-
     protected override void OnStartup([CanBeNull] StartupEventArgs e)
     {
       base.OnStartup(e);
 
-      // Ensure we are running only one instance of process
-      if (!App.AcquireSingleInstanceLock())
+      if (!App.EnsureSingleProcess(e.Args))
       {
-        try
-        {
-          // Change exit code to some uniqueue value to recognize reason of the app closing
-          LifeManager.ShutdownApplication(APP_DUPLICATE_EXIT_CODE);
-        }
-        catch (Exception ex)
-        {
-          Log.Error("An unhandled error occurred during shutting down", this, ex);
-        }
+        Environment.Exit(0);
 
         return;
       }
 
-      try
+      if (CoreApp.HasBeenUpdated)
       {
-        // If this is restart, wait until the master instance exists.
-        LifeManager.WaitUntilOriginalInstanceExits(e.Args);
+        var ver = ApplicationManager.AppVersion;
+        if (!string.IsNullOrEmpty(ver))
+        {
+          var exists = false;
+          var wc = new WebClient();
+          var url = "https://github.com/Sitecore/Sitecore-Instance-Manager/releases/tag/" + ver;
+          try
+          {
+            wc.DownloadString(url);
+            exists = true;
+          }
+          catch
+          {
+            Log.Warn("Tag was not found: {0}", url);
+          }
 
-        // Capture UI sync context. It will allow to invoke delegats on UI thread in more elegant way (rather than use Dispatcher directly).
-        LifeManager.UISynchronizationContext = SynchronizationContext.Current;
+          if (exists)
+          {
+            CoreApp.OpenInBrowser(url, true);
+          }
+        }
       }
-      catch (Exception ex)
+      
+      if (CoreApp.IsVeryFirstRun || CoreApp.HasBeenUpdated)
       {
-        WindowHelper.HandleError("An unhandled error occurred during LifeManager work", true, ex);
+        CacheManager.ClearAll();
+        foreach (var dir in Directory.GetDirectories(ApplicationManager.TempFolder))
+        {
+          Directory.Delete(dir, true);
+        }
+
+        var ext = ".deploy.txt";
+        foreach (var filePath in Directory.GetFiles(".", "*" + ext, SearchOption.AllDirectories))
+        {
+          if (filePath == null)
+          {
+            continue;
+          }
+
+          var newFilePath = filePath.Substring(0, filePath.Length - ext.Length);
+          if (File.Exists(newFilePath))
+          {
+            File.Delete(newFilePath);
+          }
+
+          File.Move(filePath, newFilePath);
+        }
       }
 
-      App.LogMainInfo();
+      if (!App.CheckPermissions())
+      {
+        Environment.Exit(0);
+
+        return;
+      }
+
+      CoreApp.InitializeLogging();
+
+      CoreApp.LogMainInfo();
+
+      if (!App.CheckIIS())
+      {
+        WindowHelper.ShowMessage("Cannot connect to IIS. Make sure it is installed and running.", MessageBoxButton.OK, MessageBoxImage.Exclamation);
+
+        Environment.Exit(0);
+
+        return;
+      }
 
       // Initializing pipelines from Pipelines.config and WizardPipelines.config files
       if (!App.InitializePipelines())
       {
-        LifeManager.ShutdownApplication(APP_PIPELINES_ERROR);
+        Environment.Exit(0);
+
         return;
       }
 
@@ -112,21 +158,24 @@ namespace SIM.Tool
       var main = App.CreateMainWindow();
       if (main == null)
       {
-        LifeManager.ShutdownApplication(APP_NO_MAIN_WINDOW);
+        Environment.Exit(0);
+
         return;
       }
 
       // Initialize Profile Manager
       if (!App.InitializeProfileManager(main))
       {
-        Log.Info("Application closes due to invalid configuration", typeof(App));
+        Log.Info("Application closes due to invalid configuration");
 
         // Since the main window instance was already created we need to "dispose" it by showing and closing.
         main.Width = 0;
         main.Height = 0;
         main.Show();
         main.Close();
-        LifeManager.ShutdownApplication(2);
+
+        Environment.Exit(0);
+
         return;
       }
 
@@ -137,20 +186,20 @@ namespace SIM.Tool
         WizardPipelineManager.Start("agreement", main, new ProcessorArgs(), false);
         if (!File.Exists(agreementAcceptedFilePath))
         {
+          Environment.Exit(0);
+
           return;
         }
       }
 
-      // Run updater
-      App.RunUpdater();
+      // Clean up garbage
+      CoreApp.DeleteTempFolders();
 
       App.LoadIocResourcesForSolr();
+      Analytics.Start();
 
-      // Initializing plugins asynchronously 
-      PluginManager.Initialize();
 
-      // Clean up garbage
-      App.DeleteTempFolders();
+      CoreApp.WriteLastRunVersion();
 
       // Show main window
       try
@@ -160,9 +209,8 @@ namespace SIM.Tool
       }
       catch (Exception ex)
       {
-        WindowHelper.HandleError("Main window caused unhandled exception", true, ex, typeof(App));
+        WindowHelper.HandleError("Main window caused unhandled exception", true, ex);
       }
-    }
 
     private static void LoadIocResourcesForSolr()
     {
@@ -176,26 +224,89 @@ namespace SIM.Tool
 
 
 
-    #endregion
+      CoreApp.Exit();
 
-    #region Private methods
+      Analytics.Flush();
 
-    private static bool AcquireSingleInstanceLock()
+      Environment.Exit(0);
+    }
+
+    private static bool EnsureSingleProcess(string[] args)
     {
-      using (new ProfileSection("Acquire single instance lock", typeof(App)))
+      var count = args.Length == 1 && args.Single() == "child" ? 2 : 1;
+      var currentSessionId = Process.GetCurrentProcess().SessionId;
+      var processes = Process.GetProcessesByName(Path.GetFileNameWithoutExtension(Assembly.GetExecutingAssembly().CodeBase));
+
+      return processes.Count(x => x.SessionId == currentSessionId && !x.HasExited && x.PrivateMemorySize64 > 5000000) <= count;
+    }
+
+    private static bool CheckIIS()
+    {
+      try
+      {
+        using (var sc = new ServiceController("W3SVC"))
+        {
+          Log.Info("IIS.Name: {0}", sc.DisplayName);
+          Log.Info("IIS.Status: {0}", sc.Status);
+          Log.Info("IIS.MachineName: {0}", sc.MachineName);
+          Log.Info("IIS.ServiceName: {0}", sc.ServiceName);
+          Log.Info("IIS.ServiceType: {0}", sc.ServiceType);
+
+          return sc.Status.Equals(ServiceControllerStatus.Running);
+        }
+      }
+      catch (Exception ex)
+      {
+        Log.Error(ex, "Error during checking IIS state");
+
+        return false;
+      }
+    }
+
+    private static bool CheckPermissions()
+    {
+      if (new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator))
+      {
+        return true;
+      }
+
+      // It is not possible to launch a ClickOnce app as administrator directly, so instead we launch the
+      // app as administrator in a new process.
+      var processInfo = new ProcessStartInfo(Assembly.GetExecutingAssembly().CodeBase)
+      {
+        Arguments = "child",
+        UseShellExecute = true,
+        Verb = "runas"
+      };
+
+      // Start the new process
+      try
       {
         try
         {
-          return LifeManager.AcquireSingleInstanceLock();
+          Process.Start(processInfo);
         }
-        catch (Exception ex)
+        catch (Win32Exception ex)
         {
-          WindowHelper.HandleError("Error occurred during acquiring single instance lock", true, ex);
+          if (ex.NativeErrorCode != 1223)
+          {
+            throw;
+          }
 
-          return true;
+          Log.Info("User cancelled permissions elevation");
         }
       }
+      catch (Exception ex)
+      {
+        Log.Error(ex, "An unhandled exception was thrown");
+      }
+
+      return false;
     }
+
+    #endregion
+
+    #region Private methods
 
     private static MainWindow CreateMainWindow()
     {
@@ -205,29 +316,17 @@ namespace SIM.Tool
       }
       catch (Exception ex)
       {
-        WindowHelper.HandleError("The main window thrown an exception during creation. " + AppLogsMessage, true, ex, typeof(App));
+        WindowHelper.HandleError("The main window thrown an exception during creation. " + AppLogsMessage, true, ex);
         return null;
       }
     }
 
-    private static void DeleteTempFolders()
-    {
-      try
-      {
-        FileSystem.FileSystem.Local.Directory.DeleteTempFolders();
-      }
-      catch (Exception ex)
-      {
-        Log.Error("Deleting temp folders caused an exception", typeof(App), ex);
-      }
-    }
-
-    private static Profile DetectProfile()
+    private static Base.Profiles.Profile DetectProfile()
     {
       try
       {
         InstanceManager.Initialize();
-        var instances = InstanceManager.Instances;
+        var instances = InstanceManager.Instances.ToArray();
         if (!instances.Any())
         {
           return null;
@@ -244,39 +343,41 @@ namespace SIM.Tool
           FileSystem.FileSystem.Local.File.Copy(instance.LicencePath, lic);
         }
 
-        return new Profile
+        return new Base.Profiles.Profile
         {
-          ConnectionString = cstr, 
-          InstancesFolder = root, 
-          LocalRepository = rep, 
+          ConnectionString = cstr,
+          InstancesFolder = root,
+          LocalRepository = rep,
           License = lic
         };
       }
       catch (Exception ex)
       {
-        Log.Error("Error during detecting profile defaults", typeof(App), ex);
+        Log.Error(ex, "Error during detecting profile defaults");
 
-        return new Profile();
+        return new Base.Profiles.Profile();
       }
     }
 
     private static bool InitializePipelines()
     {
-      using (new ProfileSection("Re-initializing pipelines", typeof(App)))
+      using (new ProfileSection("Re-initializing pipelines"))
       {
         try
         {
-          var wizardPipelinesConfig = XmlDocumentEx.LoadFile(WizardPipelineManager.WizardpipelinesConfigFilePath);
+          var wizardPipelinesConfig = XmlDocumentEx.LoadXml(WizardPipelinesConfig.Contents);
           var pipelinesNode = wizardPipelinesConfig.SelectSingleNode("/configuration/pipelines") as XmlElement;
           Assert.IsNotNull(pipelinesNode, "pipelinesNode2");
 
-          var pipelinesConfig = XmlDocumentEx.LoadFile(PipelineManager.PipelinesConfigFilePath);
-          pipelinesConfig.Merge(XmlDocumentEx.LoadXml("<configuration>" + pipelinesNode.OuterXml + "</configuration>"));
+          var pipelinesConfig = XmlDocumentEx.LoadXml(PipelinesConfig.Contents);
+          pipelinesConfig.Merge(XmlDocumentEx.LoadXml(pipelinesNode.OuterXml));
 
-          var resultPipelinesNode = pipelinesConfig.SelectSingleNode("configuration/pipelines") as XmlElement;
+          var resultPipelinesNode = pipelinesConfig.SelectSingleNode("/pipelines") as XmlElement;
           Assert.IsNotNull(resultPipelinesNode, "Can't find pipelines configuration node");
 
           PipelineManager.Initialize(resultPipelinesNode);
+
+          WizardPipelineManager.Initialize(wizardPipelinesConfig.DocumentElement);
 
           return true;
         }
@@ -291,7 +392,7 @@ namespace SIM.Tool
 
     private static bool InitializeProfileManager(Window mainWindow)
     {
-      using (new ProfileSection("Initialize profile manager", typeof(App)))
+      using (new ProfileSection("Initialize profile manager"))
       {
         ProfileSection.Argument("mainWindow", mainWindow);
 
@@ -312,114 +413,10 @@ namespace SIM.Tool
         }
         catch (Exception ex)
         {
-          WindowHelper.HandleError("Profile manager failed during initialization. " + AppLogsMessage, true, ex, typeof(App));
+          WindowHelper.HandleError("Profile manager failed during initialization. " + AppLogsMessage, true, ex);
         }
 
         return ProfileSection.Result(false);
-      }
-    }
-
-    private static void LogMainInfo()
-    {
-      try
-      {
-        Log.Info("**********************************************************************", typeof(App));
-        Log.Info("**********************************************************************", typeof(App));
-        Log.Info("Sitecore Instance Manager started", typeof(App));
-        Log.Info("Version: " + ApplicationManager.AppVersion, typeof(App));
-        Log.Info("Revison: " + ApplicationManager.AppRevision, typeof(App));
-        Log.Info("Label: " + ApplicationManager.AppLabel, typeof(App));
-        var nativeArgs = Environment.GetCommandLineArgs();
-        string[] commandLineArgs = nativeArgs.Skip(1).ToArray();
-        string argsToLog = commandLineArgs.Length > 0 ? string.Join("|", commandLineArgs) : "<NO ARGUMENTS>";
-        Log.Info("Executable: " + (nativeArgs.FirstOrDefault() ?? string.Empty), typeof(App));
-        Log.Info("Arguments: " + argsToLog, typeof(App));
-        Log.Info("Directory: " + Environment.CurrentDirectory, typeof(App));
-        Log.Info("**********************************************************************", typeof(App));
-        Log.Info("**********************************************************************", typeof(App));
-      }
-      catch
-      {
-        Debug.WriteLine("Error during log main info");
-      }
-    }
-
-    private static void RunUpdater()
-    {
-#if DEBUG
-      return;
-#endif
-      if (!ApplicationManager.IsDebugging)
-      {
-        try
-        {
-          Log.Info("Running updater", typeof(App));
-          const string updaterFileName = "Updater.exe";
-          const string newUpdaterFileName = "Updater_new.exe";
-
-          if (Process.GetProcessesByName(updaterFileName).Any())
-          {
-            return;
-          }
-
-          if (Process.GetProcessesByName(newUpdaterFileName).Any())
-          {
-            return;
-          }
-
-          if (File.Exists(newUpdaterFileName))
-          {
-            if (File.Exists(updaterFileName))
-            {
-              File.Delete(updaterFileName);
-            }
-
-            File.Move(newUpdaterFileName, updaterFileName);
-          }
-
-          const string updaterConfigFileName = "Updater.exe.config";
-          const string newUpdaterConfigFileName = "Updater_new.exe.config";
-          if (File.Exists(newUpdaterConfigFileName))
-          {
-            if (File.Exists(updaterConfigFileName))
-            {
-              File.Delete(updaterConfigFileName);
-            }
-
-            File.Move(newUpdaterConfigFileName, updaterConfigFileName);
-          }
-
-          if (!File.Exists(updaterConfigFileName))
-          {
-            File.WriteAllText(updaterConfigFileName, @"<?xml version=""1.0""?>
-<configuration>
-  <appSettings>
-    <add key=""ProductTitle"" value=""Sitecore Instance Manager""/>
-    <add key=""ProductFileName"" value=""SIM.Tool.exe""/>
-    <add key=""UpdaterEnabled"" value=""yes""/>
-    <add key=""IgnoreList"" value=""Updater.exe|Updater.exe.config|Updater.vshost.exe|Updater.log|SIM.Tool.vshost.exe""/>
-    <add key=""ClearCacheFolders"" value=""%APPDATA%\Sitecore\Sitecore Instance Manager\Caches""/>
-    <add key=""LatestVersionURL"" value=""http://dl.sitecore.net/updater/1.1/sim/latest-version.txt""/>
-    <add key=""DownloadURL"" value=""http://dl.sitecore.net/updater/1.1/sim/download.txt""/>
-    <add key=""MessageURL"" value=""http://dl.sitecore.net/updater/1.1/sim/message.txt""/>
-  </appSettings>
-</configuration>");
-            Thread.Sleep(100);
-          }
-
-          if (!File.Exists(updaterFileName))
-          {
-            File.Copy(ApplicationManager.GetEmbeddedApp("Updater.zip", "SIM.Tool", "updater.exe"), updaterFileName);
-
-            Thread.Sleep(100);
-          }
-
-          WindowHelper.RunApp(updaterFileName);
-        }
-        catch (Exception ex)
-        {
-          WindowHelper.HandleError("Updater caused unhandled exception", true, ex, typeof(App));
-        }
       }
     }
 
@@ -434,7 +431,7 @@ namespace SIM.Tool
       }
       catch (Exception ex)
       {
-        Log.Error("Failed to process " + label, typeof(App), ex);
+        Log.Error(ex, "Failed to process {0}", label);
 
         return default(T);
       }

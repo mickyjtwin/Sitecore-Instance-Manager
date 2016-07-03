@@ -1,12 +1,13 @@
-﻿using System;
-using System.IO;
-using System.Linq;
-using System.Net;
-using System.Threading;
-using Sitecore.Diagnostics;
-
-namespace SIM
+﻿namespace SIM
 {
+  using System;
+  using System.IO;
+  using System.Linq;
+  using System.Net;
+  using System.Threading;
+  using Sitecore.Diagnostics.Base;
+  using Sitecore.Diagnostics.Logging;
+
   public static class WebRequestHelper
   {
     #region Constants
@@ -26,7 +27,7 @@ namespace SIM
 
     public static bool DownloadFile(Uri url, string destFileName, int? timeout = null, int? readWriteTimeout = null, string cookies = null)
     {
-      using (new ProfileSection("Download file", typeof(WebRequestHelper)))
+      using (new ProfileSection("Download file"))
       {
         ProfileSection.Argument("url", url);
         ProfileSection.Argument("destFileName", destFileName);
@@ -58,7 +59,7 @@ namespace SIM
 
     public static bool DownloadFile(Uri url, string destFileName, HttpWebResponse response, CancellationToken? token = null, Action<int> indicateProgress = null)
     {
-      using (new ProfileSection("Download file", typeof(WebRequestHelper)))
+      using (new ProfileSection("Download file"))
       {
         ProfileSection.Argument("url", url);
         ProfileSection.Argument("destFileName", destFileName);
@@ -94,7 +95,7 @@ namespace SIM
 
     public static void DownloadFile(string destFileName, Stream responseStream, CancellationToken? token = null, Action<int> indicateProgress = null)
     {
-      using (new ProfileSection("Download file", typeof(WebRequestHelper)))
+      using (new ProfileSection("Download file"))
       {
         ProfileSection.Argument("destFileName", destFileName);
         ProfileSection.Argument("responseStream", responseStream);
@@ -176,7 +177,7 @@ namespace SIM
       }
       catch (InvalidOperationException ex)
       {
-        Log.Warn("There is a problem with detecting file name of {0}".FormatWith(link), typeof(WebRequestHelper), ex);
+        Log.Warn(ex, "There is a problem with detecting file name of {0}", link);
         var path = link.AbsolutePath;
         return path.Substring(path.LastIndexOf("/") + 1);
       }
@@ -203,7 +204,7 @@ namespace SIM
       }
       catch (InvalidOperationException ex)
       {
-        Log.Warn("There is a problem with detecting file size of {0}".FormatWith(link), typeof(WebRequestHelper), ex);
+        Log.Warn(ex, "There is a problem with detecting file size of {0}", link);
         return -1;
       }
     }

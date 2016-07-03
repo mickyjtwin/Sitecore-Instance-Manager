@@ -2,18 +2,18 @@
 {
   using System;
   using System.ComponentModel;
-  using System.IO;
   using System.Threading;
   using System.Windows;
   using System.Windows.Controls;
   using System.Windows.Input;
   using System.Windows.Threading;
-  using SIM.Products;
+  using SIM.Core;
   using SIM.Tool.Base;
   using SIM.Tool.Base.Plugins;
   using SIM.Tool.Windows.MainWindowComponents;
-  using Sitecore.Diagnostics;
-  using Sitecore.Diagnostics.Annotations;
+  using Sitecore.Diagnostics.Base;
+  using Sitecore.Diagnostics.Base.Annotations;
+  using Sitecore.Diagnostics.Logging;
 
   #region
 
@@ -37,7 +37,7 @@
     {
       this.InitializeComponent();
 
-      using (new ProfileSection("Main window ctor", typeof(MainWindow)))
+      using (new ProfileSection("Main window ctor"))
       {
         Instance = this;
         if (WindowsSettings.AppUiMainWindowWidth.Value <= 0)
@@ -45,7 +45,7 @@
           this.MaxWidth = this.MinWidth;
         }
 
-        this.Title = string.Format(this.Title, ApplicationManager.AppShortVersion, ApplicationManager.AppLabel);
+        this.Title = string.Format(this.Title, ApplicationManager.AppShortVersion, ApplicationManager.AppVersion, ApplicationManager.AppLabel);
 
         this.timer =
           new System.Threading.Timer(
@@ -70,50 +70,6 @@
     #endregion
 
     #region Private methods
-
-    private static string GetCookie()
-    {
-      var path = Path.Combine(ApplicationManager.TempFolder, "cookie.txt");
-      if (!FileSystem.FileSystem.Local.File.Exists(path))
-      {
-        var cookie = Guid.NewGuid().ToString().Replace("{", string.Empty).Replace("}", string.Empty).Replace("-", string.Empty);
-        FileSystem.FileSystem.Local.File.WriteAllText(path, cookie);
-
-        return cookie;
-      }
-
-      return FileSystem.FileSystem.Local.File.ReadAllText(path);
-    }
-
-    private void AnalyticsTracking()
-    {
-      if (this.DoNotTrack())
-      {
-        return;
-      }
-
-      var id = this.GetId();
-      var ver = ApplicationManager.AppVersion.EmptyToNull() ?? "dev";
-
-      this.Dispatcher.Invoke(new Action(() =>
-      {
-        try
-        {
-          var wb = new System.Windows.Forms.WebBrowser
-          {
-            ScriptErrorsSuppressed = true
-          };
-
-          var url = string.Format("https://bitbucket.org/alienlab/sitecore-instance-manager/wiki/Tracking?version={0}&id={1}", ver, id);
-
-          wb.Navigate(url, null, null, "User-Agent: Sitecore Instance Manager");
-        }
-        catch (Exception ex)
-        {
-          Log.Error("Failed to update statistics internal identifier", this, ex);
-        }
-      }));
-    }
 
     private void AppPoolRecycleClick(object sender, RoutedEventArgs e)
     {
@@ -180,32 +136,6 @@
       // disabled since not fixed yet
       // return true;
       return EnvironmentHelper.CheckSqlServer();
-    }
-
-    private bool DoNotTrack()
-    {
-      var path = Path.Combine(ApplicationManager.TempFolder, "donottrack.txt");
-
-      return FileSystem.FileSystem.Local.File.Exists(path);
-    }
-
-    private string GetId()
-    {
-      try
-      {
-        if (EnvironmentHelper.IsSitecoreMachine)
-        {
-          return "internal-" + Environment.MachineName + "/" + Environment.UserName;
-        }
-      }
-      catch (Exception ex)
-      {
-        Log.Warn("Failed to compute internal identifier", this, ex);
-      }
-
-      string cookie = GetCookie();
-
-      return string.Format("public-{0}", cookie);
     }
 
     private void HandleError(Exception exception)
@@ -461,8 +391,6 @@
         {
           MainWindowHelper.Initialize();
         }
-
-        new Action(this.AnalyticsTracking).BeginInvoke(null, null);
       }
       catch (Exception ex)
       {
@@ -480,10 +408,10 @@
     {
       using (new ProfileSection("Initializing main window", this))
       {
-        var appDocument = XmlDocumentEx.LoadFile("App.xml");
+        var appDocument = XmlDocumentEx.LoadFileSafe("App.xml") ?? XmlDocumentEx.LoadFile(ApplicationManager.GetEmbeddedFile("SIM.Tool.Windows", "App.xml"));
+        appDocument.Save("App.xml");
         MainWindowHelper.InitializeRibbon(appDocument);
         MainWindowHelper.InitializeContextMenu(appDocument);
-        new Action(ManifestHelper.CheckUpdateNeeded).BeginInvoke(null, null);
       }
     }
 
@@ -501,12 +429,7 @@
         }
         catch (Exception ex)
         {
-          Log.Error("Err", this, ex);
-        }
-
-        if (!e.Cancel)
-        {
-          MainWindowHelper.UpdateManifests();
+          Log.Error(ex, "Err");
         }
       }
     }

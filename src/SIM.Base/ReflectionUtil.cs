@@ -1,9 +1,10 @@
-﻿using System;
-using Sitecore.Diagnostics;
-using Sitecore.Diagnostics.Annotations;
-
-namespace SIM
+﻿namespace SIM
 {
+  using System;
+  using Sitecore.Diagnostics.Base;
+  using Sitecore.Diagnostics.Base.Annotations;
+  using Sitecore.Diagnostics.Logging;
+
   public static class ReflectionUtil
   {
     #region Public methods
@@ -13,7 +14,7 @@ namespace SIM
     {
       Assert.ArgumentNotNull(type, "type");
 
-      using (new ProfileSection("Create object", typeof(ReflectionUtil)))
+      using (new ProfileSection("Create object"))
       {
         ProfileSection.Argument("type", type);
         ProfileSection.Argument("objects", objects);

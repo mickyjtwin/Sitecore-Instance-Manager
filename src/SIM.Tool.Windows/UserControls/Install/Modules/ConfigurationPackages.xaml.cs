@@ -13,8 +13,9 @@
   using SIM.Tool.Base;
   using SIM.Tool.Base.Pipelines;
   using SIM.Tool.Base.Wizards;
-  using Sitecore.Diagnostics;
-  using Sitecore.Diagnostics.Annotations;
+  using Sitecore.Diagnostics.Base;
+  using Sitecore.Diagnostics.Base.Annotations;
+  using SIM.Core;
 
   public partial class ConfigurationPackages : IWizardStep, ICustomButton, IFlowControl
   {
@@ -250,7 +251,7 @@
       }
       catch (Exception ex)
       {
-        WindowHelper.HandleError(ex.Message, true, ex, this);
+        WindowHelper.HandleError(ex.Message, true, ex);
       }
     }
 

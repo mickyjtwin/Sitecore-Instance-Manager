@@ -2,10 +2,11 @@
 {
   using System.Linq;
   using System.Windows;
+  using SIM.Core.Common;
   using SIM.Instances;
   using SIM.Tool.Base;
   using SIM.Tool.Base.Plugins;
-  using Sitecore.Diagnostics.Annotations;
+  using Sitecore.Diagnostics.Base.Annotations;
 
   [UsedImplicitly]
   public class BrowseButton : IMainWindowButton
@@ -19,7 +20,7 @@
     protected readonly string VirtualPath;
 
     [NotNull]
-    private string[] Params;
+    private readonly string[] Params;
 
     #endregion
 
@@ -32,7 +33,7 @@
       this.Params = new string[0];
     }
 
-    public BrowseButton(string param)
+    public BrowseButton([CanBeNull] string param)
     {
       var arr = (param + ":").Split(':');
       this.VirtualPath = arr[0];
@@ -51,6 +52,8 @@
 
     public void OnClick(Window mainWindow, Instance instance)
     {
+      Analytics.TrackEvent("Browse");
+
       if (instance != null)
       {
         if (!InstanceHelperEx.PreheatInstance(instance, mainWindow))

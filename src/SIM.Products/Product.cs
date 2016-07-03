@@ -12,8 +12,11 @@
   using System.Xml.Schema;
   using System.Xml.Serialization;
   using Ionic.Zip;
-  using Sitecore.Diagnostics;
-  using Sitecore.Diagnostics.Annotations;
+  using Sitecore.Diagnostics.Base;
+  using Sitecore.Diagnostics.Base.Annotations;
+  using Sitecore.Diagnostics.InformationService.Client;
+  using Sitecore.Diagnostics.InformationService.Client.Model;
+  using Sitecore.Diagnostics.Logging;
 
   #endregion
 
@@ -22,9 +25,10 @@
   {
     #region Constants
 
-    public const string ManifestPrefix = "/manifest[@version='1.3']/";
+    public const string ManifestPrefix = "/manifest/";
 
     private const string ProductNamePattern = @"([a-zA-Z][a-zA-Z\d\-\s\._]*[a-zA-Z0-9])";
+
     private const string ProductRevisionPattern = @"(\d\d\d\d\d\d[\d\w\s_\-\!\(\)]*)"; // @"(\d\d\d\d\d\d)";
 
     private const string ProductVersionPattern = @"(\d\.\d(\.?\d?))";
@@ -33,7 +37,8 @@
 
     #region Fields
 
-    public static readonly XmlDocumentEx EmptyManifest = XmlDocumentEx.LoadXml("<manifest version=\"1.3\" />");
+    public static readonly XmlDocumentEx EmptyManifest = XmlDocumentEx.LoadXml("<manifest version=\"1.4\" />");
+
     public static readonly string ProductFileNamePattern = ProductHelper.Settings.CoreProductNamePattern.Value.EmptyToNull() ?? ProductNamePattern + @"[\s]?[\-_]?[\s]?" + ProductVersionPattern + @"[\s\-]*(rev\.|build)[\s]*" + ProductRevisionPattern + @"(.zip)?$";
 
     public static readonly Regex ProductRegex = new Regex(ProductFileNamePattern, RegexOptions.IgnoreCase);
@@ -102,7 +107,7 @@
     // Used when computing default standalone instance name
     #region Fields
 
-    public static readonly XmlDocumentEx ArchiveManifest = XmlDocumentEx.LoadXml(@"<manifest version=""1.3"">
+    public static readonly XmlDocumentEx ArchiveManifest = XmlDocumentEx.LoadXml(@"<manifest version=""1.4"">
   <archive>
     <install>
       <actions>
@@ -112,11 +117,17 @@
   </archive>
 </manifest>");
 
-    public static readonly XmlDocumentEx PackageManifest = XmlDocumentEx.LoadXml(@"<manifest version=""1.3"">
+    public static readonly XmlDocumentEx PackageManifest = XmlDocumentEx.LoadXml(@"<manifest version=""1.4"">
   <package />
 </manifest>");
     private bool? isArchive;
     private string searchToken;
+    public static readonly IServiceClient Service = new ServiceClient();
+
+    [CanBeNull]
+    private IRelease release;
+
+    private bool unknownRelease;
 
     #endregion
 
@@ -178,7 +189,41 @@
     {
       get
       {
-        return this.Manifest.With(m => m.SelectSingleElement(ManifestPrefix + "*/label").With(x => x.InnerText));
+        return this.Manifest.With(m => m.SelectSingleElement(ManifestPrefix + "*/label").With(x => x.InnerText)) ?? this.Release.With(x => x.Label);
+      }
+    }
+
+    [CanBeNull]
+    public IRelease Release
+    {
+      get
+      {
+        var release = this.release;
+        if (release != null)
+        {
+          return release;
+        }
+
+        if (this.unknownRelease || this.Name != "Sitecore CMS")
+        {
+          return null;
+        }
+
+        release = Service.GetVersions("Sitecore CMS")
+          .With(x => x.FirstOrDefault(z => z.Name == this.Version))
+          .With(x => x.Releases)
+          .With(x => x.FirstOrDefault(z => z.Revision == this.Revision));
+
+        if (release == null)
+        {
+          this.unknownRelease = true;
+
+          return null;
+        }
+
+        this.release = release;
+
+        return release;
       }
     }
 
@@ -262,17 +307,15 @@
     public string Revision { get; set; }
 
     [NotNull]
+    [UsedImplicitly]
     public string RevisionAndLabel
     {
       get
       {
-        if (this.Manifest != null && this.Manifest != EmptyManifest)
+        var label = this.Label;
+        if (!string.IsNullOrEmpty(label))
         {
-          string label = this.Label;
-          if (!string.IsNullOrEmpty(label))
-          {
-            return this.Revision + " - " + label;
-          }
+          return this.Revision + " - " + label;
         }
 
         return this.Revision;
@@ -500,7 +543,7 @@
       }
       catch (Exception ex)
       {
-        Log.Warn("An error occurred during extracting readme text from " + path, this, ex);
+        Log.Warn(ex, "An error occurred during extracting readme text from {0}",  path);
         readmeText = string.Empty;
       }
 
@@ -638,7 +681,7 @@
 
       const string cacheName = "IsPackage";
       string path = packagePath.ToLowerInvariant();
-      using (new ProfileSection("Is it package or not", typeof(Product)))
+      using (new ProfileSection("Is it package or not"))
       {
         ProfileSection.Argument("packagePath", packagePath);
         ProfileSection.Argument("manifest", manifest);
@@ -681,7 +724,7 @@
         }
         catch (Exception e)
         {
-          Log.Warn("Detecting if the '{0}' file is a Sitecore Package failed with exception.".FormatWith(path), typeof(Product), e);
+          Log.Warn("Detecting if the '{0}' file is a Sitecore Package failed with exception.", path, e);
           CacheManager.SetEntry(cacheName, path, "false");
 
           return ProfileSection.Result(false);

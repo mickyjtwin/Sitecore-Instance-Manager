@@ -5,8 +5,9 @@
   using System.Linq;
   using Microsoft.Web.Administration;
   using SIM.Adapters.WebServer;
-  using Sitecore.Diagnostics;
-  using Sitecore.Diagnostics.Annotations;
+  using Sitecore.Diagnostics.Base;
+  using Sitecore.Diagnostics.Base.Annotations;
+  using Sitecore.Diagnostics.Logging;
 
   #region
 
@@ -96,7 +97,7 @@
     public static Instance GetInstance([NotNull] string name)
     {
       Assert.ArgumentNotNull(name, "name");
-      Log.Debug("InstanceManager:GetInstance('{0}')".FormatWith(name));
+      Log.Debug("InstanceManager:GetInstance('{0}')", name);
 
       Initialize();
       if (Instances == null)
@@ -109,43 +110,29 @@
 
     public static void Initialize([CanBeNull] string defaultRootFolder = null)
     {
-      using (WebServerManager.WebServerContext context = WebServerManager.CreateContext("Initialize instance manager", typeof(InstanceManager)))
+      using (WebServerManager.WebServerContext context = WebServerManager.CreateContext("Initialize instance manager"))
       {
         ProfileSection.Argument("defaultRootFolder", defaultRootFolder);
 
-        IEnumerable<Site> sites = GetOperableSites(context, defaultRootFolder, string.IsNullOrEmpty(defaultRootFolder));
+        IEnumerable<Site> sites = GetOperableSites(context, defaultRootFolder);
         PartiallyCachedInstances = GetPartiallyCachedInstances(sites);
         Instances = GetInstances();
       }
     }
-
-    [Obsolete]
-    public static void Initialize([CanBeNull] string defaultRootFolder, bool? detectEverywhere)
+    
+    public static void InitializeWithSoftListRefresh([CanBeNull] string defaultRootFolder = null)
     {
-      using (WebServerManager.WebServerContext context = WebServerManager.CreateContext("Initialize instance manager", typeof(InstanceManager)))
-      {
-        ProfileSection.Argument("defaultRootFolder", defaultRootFolder);
-        ProfileSection.Argument("detectEverywhere", detectEverywhere);
-
-        IEnumerable<Site> sites = GetOperableSites(context, defaultRootFolder, detectEverywhere);
-        PartiallyCachedInstances = GetPartiallyCachedInstances(sites);
-        Instances = GetInstances();
-      }
-    }
-
-    public static void InitializeWithSoftListRefresh([CanBeNull] string defaultRootFolder = null, bool? detectEverywhere = null)
-    {
-      using (new ProfileSection("Initialize with soft list refresh", typeof(InstanceManager)))
+      using (new ProfileSection("Initialize with soft list refresh"))
       {
         // Add check that this isn't an initial initialization
         if (Instances == null)
         {
-          Initialize(defaultRootFolder, detectEverywhere);
+          Initialize(defaultRootFolder);
         }
 
-        using (WebServerManager.WebServerContext context = WebServerManager.CreateContext("Initialize with soft list refresh", typeof(InstanceManager)))
+        using (WebServerManager.WebServerContext context = WebServerManager.CreateContext("Initialize with soft list refresh"))
         {
-          IEnumerable<Site> sites = GetOperableSites(context, defaultRootFolder, detectEverywhere);
+          IEnumerable<Site> sites = GetOperableSites(context, defaultRootFolder);
 
           // The trick is in reused PartiallyCachedInstances. We use site ID as identificator that cached instance may be reused. If we can't fetch instance from cache, we create new.
           PartiallyCachedInstances = sites
@@ -164,7 +151,7 @@
 
     private static IEnumerable<Instance> GetInstances()
     {
-      using (new ProfileSection("Get instances", typeof(InstanceManager)))
+      using (new ProfileSection("Get instances"))
       {
         var array = PartiallyCachedInstances.Select(x => GetInstance(x.ID)).ToArray();
 
@@ -174,7 +161,7 @@
 
     private static IEnumerable<Instance> GetPartiallyCachedInstances(IEnumerable<Site> sites)
     {
-      using (new ProfileSection("Getting partially cached Sitecore instances", typeof(InstanceManager)))
+      using (new ProfileSection("Getting partially cached Sitecore instances"))
       {
         ProfileSection.Argument("sites", sites);
 
@@ -196,37 +183,23 @@
       Assert.ArgumentNotNull(site, "site");
 
       int id = (Int32)site.Id;
-      Log.Debug("InstanceManager:GetInstance(Site: {0})".FormatWith(site.Id));
+      Log.Debug("InstanceManager:GetInstance(Site: {0})", site.Id);
       return new Instance(id);
     }
 
-    private static IEnumerable<Site> GetOperableSites([NotNull] WebServerManager.WebServerContext context, [CanBeNull] string defaultRootFolder = null, bool? detectEverywhere = null)
+    private static IEnumerable<Site> GetOperableSites([NotNull] WebServerManager.WebServerContext context, [CanBeNull] string defaultRootFolder = null)
     {
       Assert.IsNotNull(context, "Context cannot be null");
 
-      using (new ProfileSection("Getting operable sites", typeof(InstanceManager)))
+      using (new ProfileSection("Getting operable sites"))
       {
         ProfileSection.Argument("context", context);
         ProfileSection.Argument("defaultRootFolder", defaultRootFolder);
-        ProfileSection.Argument("detectEverywhere", detectEverywhere);
 
+        IEnumerable<Site> sites = context.Sites;
         if (defaultRootFolder != null)
         {
           instancesFolder = defaultRootFolder.ToLower();
-        }
-
-        IEnumerable<Site> sites = context.Sites;
-        var detectEverywhereResult = detectEverywhere ?? Settings.CoreInstancesDetectEverywhere.Value;
-        if (!detectEverywhereResult)
-        {
-          if (string.IsNullOrEmpty(instancesFolder))
-          {
-            Log.Warn("Since the 'Detect.Instances.Everywhere' setting is disabled and the instances root isn't set in the Settings dialog, the 'C:\\inetpub\\wwwroot' will be used instead", typeof(InstanceManager));
-
-            instancesFolder = @"C:\inetpub\wwwroot";
-          }
-
-          instancesFolder = instancesFolder.ToLower();
           sites = sites.Where(s => WebServerManager.GetWebRootPath(s).ToLower().Contains(instancesFolder));
         }
 
@@ -239,7 +212,7 @@
     {
       Assert.ArgumentNotNull(site, "site");
       int id = (Int32)site.Id;
-      Log.Debug("InstanceManager:GetPartiallyCachedInstance(Site: {0})".FormatWith(site.Id));
+      Log.Debug("InstanceManager:GetPartiallyCachedInstance(Site: {0})", site.Id);
       return new PartiallyCachedInstance(id);
     }
 
@@ -263,7 +236,7 @@
 
     public static Instance GetInstance(long id)
     {
-      using (new ProfileSection("Get instance by id", typeof(InstanceManager)))
+      using (new ProfileSection("Get instance by id"))
       {
         ProfileSection.Argument("id", id);
 
@@ -271,19 +244,6 @@
 
         return ProfileSection.Result(instance);
       }
-    }
-
-    #endregion
-
-    #region Nested type: Settings
-
-    public static class Settings
-    {
-      #region Fields
-
-      public static readonly AdvancedProperty<bool> CoreInstancesDetectEverywhere = AdvancedSettings.Create("Core/Instances/DetectEverywhere", false);
-
-      #endregion
     }
 
     #endregion

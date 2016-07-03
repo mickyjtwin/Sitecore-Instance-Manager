@@ -1,8 +1,8 @@
 using System;
 using System.IO;
 using Ionic.Zip;
-using Sitecore.Diagnostics;
-using Sitecore.Diagnostics.Annotations;
+using Sitecore.Diagnostics.Base;
+using Sitecore.Diagnostics.Base.Annotations;
 
 namespace SIM.FileSystem
 {
@@ -102,36 +102,7 @@ namespace SIM.FileSystem
         }
       }
     }
-
-    public override void UnpackZip(string packagePath, string path, Action<long> incrementProgress, string ignore1 = null, string ignore2 = null)
-    {
-      try
-      {
-        base.UnpackZip(packagePath, path, incrementProgress, ignore1, ignore2);
-      }
-      catch (ZipException ex)
-      {
-        if (!(ex.InnerException is PathTooLongException))
-        {
-          throw;
-        }
-
-        using (var tempPath = FileSystem.Local.Directory.GetTempFolder(path))
-        {
-          using (var tempPkg = FileSystem.Local.Directory.GetTempFolder(packagePath))
-          {
-            var shortPath = Path.Combine(tempPath.Path, Path.GetFileName(path));
-
-            var shortPkgPath = Path.Combine(tempPkg.Path, Path.GetFileName(packagePath));
-            this.fileSystem.File.Copy(packagePath, shortPkgPath);
-
-            base.UnpackZip(shortPkgPath, shortPath, incrementProgress, ignore1, ignore2);
-            this.fileSystem.Directory.Copy(shortPath, path, true);
-          }
-        }
-      }
-    }
-
+    
     public override void UnpackZip(string packagePath, string path, string entriesPattern = null, int stepsCount = 1, Action incrementProgress = null, bool skipErrors = false)
     {
       try

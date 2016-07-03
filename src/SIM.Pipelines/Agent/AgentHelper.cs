@@ -10,8 +10,9 @@
   using System.Xml;
   using SIM.Instances;
   using SIM.Products;
-  using Sitecore.Diagnostics;
-  using Sitecore.Diagnostics.Annotations;
+  using Sitecore.Diagnostics.Base;
+  using Sitecore.Diagnostics.Base.Annotations;
+  using Sitecore.Diagnostics.Logging;
 
   #region
 
@@ -34,12 +35,6 @@
     private const string PackageInstalling = @"Started: package is being installed";
 
     public const string TimedOut = "timed out";
-
-    #endregion
-
-    #region Fields
-
-    private static readonly string PackagesPath = "packages";
 
     #endregion
 
@@ -171,7 +166,7 @@
 
       if (skipPostActions)
       {
-        Log.Info("PostActions are skipped", typeof(AgentHelper));
+        Log.Info("PostActions are skipped");
         return;
       }
 
@@ -202,7 +197,7 @@
       string errorPrefix = pageName + " returned an error: ";
       try
       {
-        Log.Info("Requesting URL {0}".FormatWith(url), typeof(string));
+        Log.Info("Requesting URL {0}", url);
         result = WebRequestHelper.DownloadString(url).Trim();
         if (result.ToLower().StartsWith("error:"))
         {
@@ -217,7 +212,7 @@
       }
 
 
-      Log.Info("Install status: {0}".FormatWith(result), typeof(AgentHelper));
+      Log.Info("Install status: {0}", result);
       return result;
     }
 

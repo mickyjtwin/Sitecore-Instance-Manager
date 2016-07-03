@@ -4,8 +4,9 @@
   using SIM.Instances;
   using SIM.Tool.Base;
   using SIM.Tool.Base.Plugins;
-  using Sitecore.Diagnostics;
-  using Sitecore.Diagnostics.Annotations;
+  using Sitecore.Diagnostics.Base;
+  using Sitecore.Diagnostics.Base.Annotations;
+  using SIM.Core;
 
   [UsedImplicitly]
   public class InstallMongoDbButton : IMainWindowButton
@@ -23,7 +24,7 @@
     {
       Assert.ArgumentNotNull(mainWindow, "mainWindow");
 
-      WindowHelper.RunApp(@"MongoDb.WindowsService.Installer.exe");
+      CoreApp.RunApp(ApplicationManager.GetEmbeddedFile(@"MongoDb.WindowsService.Installer.zip", "SIM.Tool.Windows", @"MongoDb.WindowsService.Installer.exe"));
     }
 
     #endregion

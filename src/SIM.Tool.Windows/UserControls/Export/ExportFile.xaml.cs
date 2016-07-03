@@ -5,7 +5,8 @@
   using System.Windows;
   using SIM.Tool.Base;
   using SIM.Tool.Base.Wizards;
-  using Sitecore.Diagnostics.Annotations;
+  using Sitecore.Diagnostics.Base.Annotations;
+  using Sitecore.Diagnostics.Logging;
 
   public partial class ExportFile : IWizardStep
   {
@@ -35,7 +36,7 @@
       }
       catch (Exception ex)
       {
-        Log.Warn("An error occurred during checking if the path is valid", this, ex);
+        Log.Warn(ex, "An error occurred during checking if the path is valid");
         return false;
       }
     }

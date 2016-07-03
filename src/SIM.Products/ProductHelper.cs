@@ -5,8 +5,9 @@
   using System.Diagnostics;
   using System.IO;
   using System.Linq;
-  using Sitecore.Diagnostics;
-  using Sitecore.Diagnostics.Annotations;
+  using Sitecore.Diagnostics.Base;
+  using Sitecore.Diagnostics.Base.Annotations;
+  using Sitecore.Diagnostics.Logging;
 
   #region
 
@@ -146,7 +147,7 @@
         }
         catch (Exception ex)
         {
-          Log.Warn("An error occurred during reading {0} file".FormatWith(assemblyPath), typeof(ProductHelper));
+          Log.Warn(ex, "An error occurred during reading {0} file", assemblyPath);
         }
       }
 
@@ -179,8 +180,6 @@
       #region Fields
 
       public static readonly AdvancedProperty<string> CoreInstallInstanceNamePattern = AdvancedSettings.Create("Core/Product/InstanceNamePattern", "{ShortName}{ShortVersion}rev{Revision}");
-
-      public static readonly AdvancedProperty<string> CoreManifestsUpdateDatabaseUrl = AdvancedSettings.Create("Core/Manifests/Update/DatabaseUrl", "http://dl.sitecore.net/updater/1.1/sim/manifests.zip");
 
       public static readonly AdvancedProperty<bool> CoreManifestsUpdateEnabled = AdvancedSettings.Create("Core/Manifests/Update/Enabled", false);
       public static readonly AdvancedProperty<string> CoreProductRootFolderNamePattern = AdvancedSettings.Create("App/Product/RootFolderNamePattern", "{ShortName}{ShortVersion}rev{Revision}");

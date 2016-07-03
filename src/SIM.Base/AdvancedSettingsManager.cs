@@ -1,8 +1,8 @@
-﻿using System.Collections.Generic;
-using Sitecore.Diagnostics;
-
-namespace SIM
+﻿namespace SIM
 {
+  using System.Collections.Generic;
+  using Sitecore.Diagnostics.Base;
+
   public static class AdvancedSettingsManager
   {
     #region Constructors

@@ -7,17 +7,16 @@
   using System.Linq;
   using System.Xml;
   using SIM.Pipelines.Processors;
-  using Sitecore.Diagnostics;
-  using Sitecore.Diagnostics.Annotations;
+  using Sitecore.Diagnostics.Base;
+  using Sitecore.Diagnostics.Base.Annotations;
+  using Sitecore.Diagnostics.Logging;
 
   #endregion
 
   public static class PipelineManager
   {
     #region Fields
-
-    public static string PipelinesConfigFilePath = "Pipelines.config";
-
+    
     private static readonly Dictionary<string, PipelineDefinition> Definitions = new Dictionary<string, PipelineDefinition>();
 
     #endregion
@@ -37,9 +36,11 @@
       return pipelinesNode;
     }
 
-    public static XmlElement Initialize(string pipelinesConfigFilePath = null)
+    public static XmlElement Initialize(string pipelinesConfigFilePath)
     {
-      var document = XmlDocumentEx.LoadFile(pipelinesConfigFilePath.EmptyToNull() ?? PipelinesConfigFilePath);
+      Assert.ArgumentNotNull(pipelinesConfigFilePath, "pipelinesConfigFilePath");
+
+      var document = XmlDocumentEx.LoadFile(pipelinesConfigFilePath);
       XmlElement pipelinesNode = GetPipelines(document);
 
       return Initialize(pipelinesNode);
@@ -47,7 +48,7 @@
 
     public static XmlElement Initialize(XmlElement pipelinesNode)
     {
-      Log.Debug("Pipelines RAW configuration: " + pipelinesNode.OuterXml);
+      Log.Debug("Pipelines RAW configuration: {0}",  pipelinesNode.OuterXml);
       Definitions.Clear();
       var resultXmlConfig = XmlDocumentEx.LoadXml("<pipelines />");
 
@@ -116,8 +117,8 @@
       Assert.ArgumentNotNull(pipelineName, "pipelineName");
       Assert.ArgumentNotNull(args, "args");
 
-      Log.Info("Pipeline '{0}' starts, isAsync: {1}".FormatWith(pipelineName, isAsync.ToString(CultureInfo.InvariantCulture)), typeof(PipelineManager));
-      using (new ProfileSection("Start pipeline", typeof(PipelineManager)))
+      Log.Info("Pipeline '{0}' starts, isAsync: {1}", pipelineName, isAsync.ToString(CultureInfo.InvariantCulture));
+      using (new ProfileSection("Start pipeline"))
       {
         ProfileSection.Argument("pipelineName", pipelineName);
         ProfileSection.Argument("args", args);
@@ -155,7 +156,7 @@
       Assert.ArgumentNotNull(pipelineName, "pipelineName");
       Assert.ArgumentNotNull(args, "args");
 
-      using (new ProfileSection("Create pipeline", typeof(PipelineManager)))
+      using (new ProfileSection("Create pipeline"))
       {
         ProfileSection.Argument("pipelineName", pipelineName);
         ProfileSection.Argument("args", args);

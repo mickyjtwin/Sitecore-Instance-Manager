@@ -7,8 +7,8 @@ namespace SIM.Tool.Windows.MainWindowComponents
   using SIM.Instances;
   using SIM.Tool.Base;
   using SIM.Tool.Base.Plugins;
-  using Sitecore.Diagnostics;
-  using Sitecore.Diagnostics.Annotations;
+  using Sitecore.Diagnostics.Base;
+  using Sitecore.Diagnostics.Base.Annotations;
 
   [UsedImplicitly]
   public class ManagedArgsTracerButton : IMainWindowButton
@@ -61,7 +61,7 @@ namespace SIM.Tool.Windows.MainWindowComponents
         return true;
       }
 
-      Process.Start(new ProcessStartInfo("cmd.exe", "/K \"" + ApplicationManager.GetEmbeddedApp("ManagedArgsTracer.zip", "SIM.Tool.Windows", "ManagedArgsTracer.exe") + " " + options + "\""));
+      Process.Start(new ProcessStartInfo("cmd.exe", "/K \"" + ApplicationManager.GetEmbeddedFile("ManagedArgsTracer.zip", "SIM.Tool.Windows", "ManagedArgsTracer.exe") + " " + options + "\""));
       return false;
     }
 

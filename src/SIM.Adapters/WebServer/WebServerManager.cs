@@ -3,8 +3,9 @@
   using System;
   using System.Linq;
   using Microsoft.Web.Administration;
-  using Sitecore.Diagnostics;
-  using Sitecore.Diagnostics.Annotations;
+  using Sitecore.Diagnostics.Base;
+  using Sitecore.Diagnostics.Base.Annotations;
+  using Sitecore.Diagnostics.Logging;
 
   #region
 
@@ -22,7 +23,7 @@
 
     public static void DeleteWebsite([NotNull] long id)
     {
-      Log.Info("Deleting website {0}".FormatWith(id), typeof(WebServerManager));
+      Log.Info("Deleting website {0}", id);
 
       using (WebServerContext context = CreateContext("WebServerManager.DeleteWebsite({0})".FormatWith(id)))
       {
@@ -38,7 +39,7 @@
     {
       Assert.ArgumentNotNull(name, "name");
 
-      Log.Info("Deleting website {0}".FormatWith(name), typeof(WebServerManager));
+      Log.Info("Deleting website {0}", name);
       using (WebServerContext context = CreateContext("WebServerManager.DeleteWebsite('{0}')".FormatWith(name)))
       {
         Site site = context.Sites[name];
@@ -86,6 +87,27 @@
       }
 
       return result;
+    }
+
+    public static bool AddHostBinding([NotNull] string siteName, [NotNull] BindingInfo binding)
+    {
+      Assert.ArgumentNotNull(siteName, "siteName");
+      Assert.ArgumentNotNull(binding, "binding");
+
+      using (WebServerContext context = CreateContext("WebServerManager.AddHostBinding('{0}','{1}')".FormatWith(siteName, binding.Host)))
+      {
+        Site siteInfo = context.Sites.FirstOrDefault(site => site.Name.EqualsIgnoreCase(siteName));
+        if (HostBindingExists(binding.Host) || siteInfo == null)
+        {
+          return false;
+        }
+        string bindingInformation = binding.IP + ":" + binding.Port + ":" + binding.Host;
+        
+        siteInfo.Bindings.Add(bindingInformation, binding.Protocol);
+        context.CommitChanges();
+      }
+
+      return true;
     }
 
     public static bool IsApplicationPoolRunning([NotNull] ApplicationPool appPool)

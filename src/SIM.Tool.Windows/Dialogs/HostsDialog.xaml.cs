@@ -8,16 +8,14 @@
   using System.Windows.Input;
   using SIM.Adapters.WebServer;
   using SIM.Tool.Base;
-  using Sitecore.Diagnostics;
-  using Sitecore.Diagnostics.Annotations;
+  using Sitecore.Diagnostics.Base;
+  using Sitecore.Diagnostics.Base.Annotations;
 
   public partial class HostsDialog
   {
     #region Fields
 
-    private readonly string hostsFilePath = Environment.ExpandEnvironmentVariables(@"%WINDIR%\System32\drivers\etc\hosts");
-
-    private List<Hosts.HostRecord> records;
+    private List<Hosts.IHostRecord> records;
 
     #endregion
 
@@ -72,7 +70,7 @@
 
     private void Add(object sender, RoutedEventArgs e)
     {
-      var newRecord = new Hosts.HostRecord("127.0.0.1");
+      var newRecord = new Hosts.IpHostRecord("127.0.0.1");
       this.records.Add(newRecord);
       this.HostsList.DataContext = null;
       this.HostsList.DataContext = this.records;
@@ -83,7 +81,7 @@
     {
       var button = (Button)sender;
       var id = button.Tag;
-      var record = this.records.Single(r => r.ID.Equals(id));
+      var record = this.records.OfType<Hosts.IpHostRecord>().Single(r => r.ID.Equals(id));
       this.records.Remove(record);
       this.HostsList.DataContext = null;
       this.HostsList.DataContext = this.records;
@@ -98,7 +96,7 @@
       }
       catch (Exception ex)
       {
-        WindowHelper.HandleError("The exception occurred during window initialization - it will be closed then.", true, ex, this);
+        WindowHelper.HandleError("The exception occurred during window initialization - it will be closed then.", true, ex);
         this.Close();
       }
     }

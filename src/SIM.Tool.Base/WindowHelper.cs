@@ -14,8 +14,10 @@
   using System.Windows.Media.Imaging;
   using Microsoft.VisualBasic.FileIO;
   using SIM.Tool.Base.Windows.Dialogs;
-  using Sitecore.Diagnostics;
-  using Sitecore.Diagnostics.Annotations;
+  using Sitecore.Diagnostics.Base;
+  using Sitecore.Diagnostics.Base.Annotations;
+  using Sitecore.Diagnostics.Logging;
+  using SIM.Core;
   using TaskDialogInterop;
 
   #region
@@ -102,14 +104,13 @@
     {
       Assert.ArgumentNotNull(fullmessage, "fullmessage");
 
-      var type = typeOwner.With(t => t.GetType()) ?? typeof(WindowHelper);
       if (ex != null)
       {
-        Log.Error(fullmessage, type, ex);
+        Log.Error(ex, fullmessage);
       }
       else
       {
-        Log.Error(fullmessage, type);
+        Log.Error(fullmessage);
       }
 
       if (isError)
@@ -117,7 +118,7 @@
         var message = ex != null ? fullmessage.TrimEnd(".".ToCharArray()) + ". " + ex.Message : fullmessage;
         if (ShowMessage(message + "\n\nYou can find details in the log file. Would you like to open it?", MessageBoxButton.OKCancel, MessageBoxImage.Error, MessageBoxResult.Cancel) == MessageBoxResult.OK)
         {
-          OpenFile(Log.LogFilePath);
+          CoreApp.OpenFile(ApplicationManager.LogsFolder);
         }
       }
       else
@@ -129,7 +130,7 @@
     public static TaskDialogResult LongRunningTask(Action longRunningTask, string title, Window owner, string content = null, string technicalInformation = null, bool allowHidingWindow = false, bool dirtyCancelationMode = false, bool allowSkip = false)
     {
       bool canceled = false;
-      using (new ProfileSection("Long running task", typeof(WindowHelper)))
+      using (new ProfileSection("Long running task"))
       {
         ProfileSection.Argument("longRunningTask", longRunningTask);
         ProfileSection.Argument("title", title);
@@ -143,7 +144,7 @@
         bool isDone = false;
         var thread = new Thread(() =>
         {
-          using (new ProfileSection("{0} (background thread)".FormatWith(title), typeof(WindowHelper)))
+          using (new ProfileSection("{0} (background thread)".FormatWith(title)))
           {
             try
             {
@@ -172,7 +173,7 @@
             }
             catch (ThreadAbortException ex)
             {
-              Log.Warn("Long running task \"{0}\" failed with exception".FormatWith(title), typeof(WindowHelper), ex);
+              Log.Warn(ex, "Long running task \"{0}\" failed with exception", title);
             }
             catch (Exception ex)
             {
@@ -259,7 +260,7 @@
         }
         catch (Exception ex)
         {
-          HandleError("The long running task caused an exception", true, ex, typeof(WindowHelper));
+          HandleError("The long running task caused an exception", true, ex);
         }
 
         return null;
@@ -374,7 +375,7 @@
       }
       catch (Exception ex)
       {
-        HandleError(ex.Message, true, ex, typeof(WindowHelper));
+        HandleError(ex.Message, true, ex);
       }
 
       return null;
@@ -418,7 +419,7 @@
       }
       catch (Exception ex)
       {
-        HandleError("Cannot show {0} window. {1}".FormatWith(window.Name, ex.Message), true, ex, typeof(WindowHelper));
+        HandleError("Cannot show {0} window. {1}".FormatWith(window.Name, ex.Message), true, ex);
       }
     }
 
@@ -499,7 +500,7 @@
       Assert.ArgumentNotNull(assemblyName, "assemblyName");
 
       assemblyName = assemblyName.Trim().TrimStart('/');
-      var result = GetImageInternal(imageName, assemblyName, AppSettings.AppUiHighDpiEnabled.Value);
+      var result = GetImageInternal(imageName, assemblyName, WinAppSettings.AppUiHighDpiEnabled.Value);
       if (result != null)
       {
         return result;
@@ -541,55 +542,10 @@
       }
       catch (Exception ex)
       {
-        Log.Warn("The {0} image cannot be retrieved from {1} assembly".FormatWith(imageName, assemblyName), typeof(WindowHelper), ex);
+        Log.Warn(ex, "The {0} image cannot be retrieved from {1} assembly", imageName, assemblyName);
 
         return null;
       }
-    }
-
-    public static void OpenFile(string path)
-    {
-      WindowHelper.RunApp("explorer.exe", path.Replace('/', '\\'));
-    }
-
-    public static void OpenFolder(string path)
-    {
-      OpenFile(path);
-    }
-
-    public static void OpenInBrowser(string url, bool isFrontEnd, string browser = null, [CanBeNull] string[] parameters = null)
-    {
-      string app = browser.EmptyToNull() ?? (isFrontEnd ? AppSettings.AppBrowsersFrontend.Value : AppSettings.AppBrowsersBackend.Value);
-      if (!string.IsNullOrEmpty(app))
-      {
-        parameters = parameters ?? new string[0];
-        parameters = parameters.Insert(0, url).ToArray();
-        RunApp(app, parameters);
-        return;
-      }
-
-      OpenFile(url);
-    }
-
-    public static Process RunApp(string app, params string[] @params)
-    {
-      using (new ProfileSection("Running app", typeof(WindowHelper)))
-      {
-        ProfileSection.Argument("app", app);
-        ProfileSection.Argument("@params", @params);
-
-        var resultParams = string.Join(" ", @params.Select(x => x.Trim('\"')).Select(x => x.Contains(" ") || x.Contains("=") ? "\"" + x + "\"" : x));
-        Log.Debug("resultParams: " + resultParams);
-
-        var process = Process.Start(app, resultParams);
-
-        return ProfileSection.Result(process);
-      }
-    }
-
-    public static Process RunApp(ProcessStartInfo startInfo)
-    {
-      return Process.Start(startInfo);
     }
 
     #endregion

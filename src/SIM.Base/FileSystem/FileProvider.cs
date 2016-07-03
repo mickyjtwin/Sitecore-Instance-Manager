@@ -2,11 +2,13 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Threading;
-using Sitecore.Diagnostics;
-using Sitecore.Diagnostics.Annotations;
+using Sitecore.Diagnostics.Base;
+using Sitecore.Diagnostics.Base.Annotations;
 
 namespace SIM.FileSystem
 {
+  using Sitecore.Diagnostics.Logging;
+
   public class FileProvider
   {
     #region Fields
@@ -49,7 +51,7 @@ namespace SIM.FileSystem
 
     public virtual void Copy(string path1, string path2, bool overwrite)
     {
-      Assert.IsTrue(!path1.EqualsIgnoreCase(path2), "Source and destination are same: " + path1);
+      Assert.IsTrue(!path1.EqualsIgnoreCase(path2), "Source and destination are same: {0}", path1);
 
       File.Copy(path1, path2, overwrite);
     }
@@ -61,7 +63,7 @@ namespace SIM.FileSystem
 
     public virtual void Copy(string source, string target, bool sync = false, int timeout = 1000)
     {
-      Log.Info("Copying the {0} file to {1}".FormatWith(source, target), typeof(FileSystem));
+      Log.Info("Copying the {0} file to {1}", source, target);
       if (File.Exists(target))
       {
         File.Delete(target);

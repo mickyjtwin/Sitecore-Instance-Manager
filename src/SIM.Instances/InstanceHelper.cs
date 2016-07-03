@@ -2,12 +2,37 @@
 {
   using System;
   using System.IO;
+  using System.Linq;
   using System.Net;
-  using Sitecore.Diagnostics;
+  using System.Text.RegularExpressions;
+  using Sitecore.Diagnostics.Base;
+  using Sitecore.Diagnostics.Base.Annotations;
 
   public static class InstanceHelper
   {
+    [NotNull]
+    private static readonly Regex LogGroupRegex = new Regex(@"(.+)(\.\d\d\d\d\d\d\d\d)(\.\d\d\d\d\d\d)?\.txt", RegexOptions.Compiled);
+
     #region Public methods
+
+    public static string[] GetLogGroups(string[] files)
+    {
+      var groups = files
+        .Where(x => !string.IsNullOrEmpty(x))
+        .Select(x => new
+        {
+          FilePath = x,
+          Position = x.LastIndexOf('\\')
+        })
+        .Select(x => x.Position < 0 ? x.FilePath : x.FilePath.Substring(x.Position + 1))
+        .Select(x => LogGroupRegex.Match(x))
+        .Where(x => x.Success)
+        .Select(x => x.Groups[1].Value)
+        .Distinct()
+        .ToArray();
+
+      return groups;
+    }
 
     public static bool IsInstanceResponsive(Instance instance, string reason = null)
     {
@@ -70,7 +95,7 @@
           text2 = text.Substring(0, Math.Min(text.Length, 200));
         }
 
-        throw new WebException("{0} \r\nStatus: {1} \r\n{2}".FormatWith(ex.Message, ex.Status.ToString(), text2), ex);
+        throw new WebException("{0} \r\nStatus: {1} \r\n{2}".FormatWith(ex.Message, ex.Status.ToString(), text2));
       }
     }
 

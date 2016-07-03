@@ -1,9 +1,9 @@
 ﻿namespace SIM.Pipelines.Reinstall
 {
-  using SIM.Pipelines.Install;
+  using System.IO;
   using SIM.Pipelines.Processors;
-  using Sitecore.Diagnostics;
-  using Sitecore.Diagnostics.Annotations;
+  using Sitecore.Diagnostics.Base;
+  using Sitecore.Diagnostics.Base.Annotations;
 
   #region
 
@@ -12,41 +12,27 @@
   [UsedImplicitly]
   public class Extract : ReinstallProcessor
   {
-    #region Constants
-
-    private const int K = 40;
-
-    #endregion
-
     #region Public Methods
 
     public override long EvaluateStepsCount(ProcessorArgs args)
     {
       Assert.ArgumentNotNull(args, "args");
 
-      return 1; // K;
+      return InstallHelper.GetStepsCount(((ReinstallArgs)args).PackagePath);
     }
 
     #endregion
 
     #region Methods
 
-    protected override void Process([NotNull] ReinstallArgs args)
+    protected override void Process(ReinstallArgs args)
     {
       Assert.ArgumentNotNull(args, "args");
 
-      var ignore1 = Settings.CoreInstallRadControls.Value ? null : "Website/sitecore/shell/RadControls";
+      var installRadControls = Directory.Exists(Path.Combine(args.WebRootPath, InstallHelper.RadControls));
+      var installDictionaries = Directory.Exists(Path.Combine(args.WebRootPath, InstallHelper.Dictionaries));
 
-      var ignore2 = Settings.CoreInstallDictionaries.Value ? null : "Website/sitecore/shell/Controls/Rich Text Editor/Dictionaries";
-
-      var controller = this.Controller;
-      if (controller != null)
-      {
-        FileSystem.FileSystem.Local.Zip.UnpackZip(args.PackagePath, args.TempFolder, controller.IncrementProgress, ignore1, ignore2);
-        return;
-      }
-
-      FileSystem.FileSystem.Local.Zip.UnpackZip(args.PackagePath, args.TempFolder, null, ignore1, ignore2);
+      InstallHelper.ExtractFile(args.PackagePath, args.WebRootPath, args.DatabasesFolderPath, args.DataFolderPath, installRadControls, installDictionaries, this.Controller);
     }
 
     #endregion

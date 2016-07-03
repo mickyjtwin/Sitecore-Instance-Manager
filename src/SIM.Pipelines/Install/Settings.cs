@@ -1,6 +1,6 @@
 ﻿namespace SIM.Pipelines.Install
 {
-  using Sitecore.Diagnostics.Annotations;
+  using Sitecore.Diagnostics.Base.Annotations;
 
   public static class Settings
   {
@@ -18,7 +18,7 @@
     [NotNull]
     public static readonly AdvancedProperty<int> CoreExportZipCompressionLevel = AdvancedSettings.Create("Core/Export/ZipCompressionLevel", 9);
     [NotNull]
-    public static readonly AdvancedProperty<bool> CoreInstallDictionaries = AdvancedSettings.Create("Core/Install/Dictionaries", false);
+    public static readonly AdvancedProperty<bool> CoreInstallDictionaries = AdvancedSettings.Create("Core/Install/Defaults/Dictionaries", false);
 
     [NotNull]
     public static readonly AdvancedProperty<string> CoreInstallMailServerAddress = AdvancedSettings.Create("Core/Install/MailServer/Address", string.Empty);
@@ -30,7 +30,7 @@
     public static readonly AdvancedProperty<bool> CoreInstallNotFoundTransfer = AdvancedSettings.Create("Core/Install/NotFoundError/UseTransfer", true);
 
     [NotNull]
-    public static readonly AdvancedProperty<bool> CoreInstallRadControls = AdvancedSettings.Create("Core/Install/RadControls", false);
+    public static readonly AdvancedProperty<bool> CoreInstallRadControls = AdvancedSettings.Create("Core/Install/Defaults/RadControls", false);
 
     [NotNull]
     public static readonly AdvancedProperty<string> CoreInstallTempFolderLocation = AdvancedSettings.Create("Core/Install/TempFolder/Location", string.Empty);
@@ -40,6 +40,8 @@
 
     [NotNull]
     public static readonly AdvancedProperty<string> CoreInstallWebServerIdentityPassword = AdvancedSettings.Create("Core/Install/WebServer/Identity/Password", string.Empty);
+
+    public static readonly AdvancedProperty<int> CoreInstallHttpRuntimeExecutionTimeout = AdvancedSettings.Create("Core/Install/HttpRuntime/ExecutionTimeout", 24*60*60);
 
     #endregion
   }

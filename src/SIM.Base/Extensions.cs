@@ -1,15 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Xml;
-using Sitecore.Diagnostics;
-using Sitecore.Diagnostics.Annotations;
-
-namespace SIM
+﻿namespace SIM
 {
-
   #region
+
+  using System;
+  using System.Collections.Generic;
+  using System.IO;
+  using System.Linq;
+  using System.Xml;
+  using Sitecore.Diagnostics.Base;
+  using Sitecore.Diagnostics.Base.Annotations;
+  using Sitecore.Diagnostics.Logging;
 
   #endregion
 
@@ -155,7 +155,7 @@ namespace SIM
       }
       catch (Exception ex)
       {
-        Log.Warn("SafeCall of the {0} method failed".FormatWith(func.ToString()), typeof(Extensions), ex);
+        Log.Warn(ex, "SafeCall of the {0} method failed", func.ToString());
         return null;
       }
     }
@@ -367,6 +367,7 @@ namespace SIM
       return end + start >= @this.Length ? @this.Substring(start) : @this.Substring(start, end);
     }
 
+    [CanBeNull]
     public static TResult With<TInput, TResult>(this TInput @this, Func<TInput, TResult> evaluator)
       where TResult : class
       where TInput : class

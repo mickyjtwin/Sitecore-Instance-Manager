@@ -2,10 +2,12 @@
 {
   using System.Windows;
   using SIM.Adapters.WebServer;
+  using SIM.Core.Common;
   using SIM.Instances;
   using SIM.Tool.Base;
   using SIM.Tool.Base.Plugins;
-  using Sitecore.Diagnostics.Annotations;
+  using Sitecore.Diagnostics.Base.Annotations;
+  using SIM.Core;
 
   [UsedImplicitly]
   public class OpenWebConfigButton : IMainWindowButton
@@ -19,6 +21,8 @@
 
     public void OnClick(Window mainWindow, Instance instance)
     {
+      Analytics.TrackEvent("OpenWebConfig");
+
       if (instance != null)
       {
         string webConfigPath = WebConfig.GetWebConfigPath(instance.WebRootPath);
@@ -26,11 +30,11 @@
         string editor = WindowsSettings.AppToolsConfigEditor.Value;
         if (!string.IsNullOrEmpty(editor))
         {
-          WindowHelper.RunApp(editor, webConfigPath);
+          CoreApp.RunApp(editor, webConfigPath);
         }
         else
         {
-          WindowHelper.OpenFile(webConfigPath);
+          CoreApp.OpenFile(webConfigPath);
         }
       }
     }

@@ -8,7 +8,7 @@
   using SIM.Tool.Base.Wizards;
   using SIM.Tool.Windows.Dialogs;
   using SIM.Tool.Windows.Pipelines.Setup;
-  using Sitecore.Diagnostics.Annotations;
+  using Sitecore.Diagnostics.Base.Annotations;
 
   public partial class ConnectionString : IWizardStep, IFlowControl
   {
@@ -46,12 +46,12 @@
       }
       catch (SqlException ex)
       {
-        WindowHelper.HandleError(ex.Message, false, ex, this);
+        WindowHelper.HandleError(ex.Message, false, ex);
         return false;
       }
       catch (Exception ex)
       {
-        WindowHelper.HandleError(ex.Message, true, ex, this);
+        WindowHelper.HandleError(ex.Message, true, ex);
         return false;
       }
       finally

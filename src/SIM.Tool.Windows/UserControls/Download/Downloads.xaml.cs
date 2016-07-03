@@ -11,8 +11,11 @@
   using SIM.Tool.Base.Profiles;
   using SIM.Tool.Base.Wizards;
   using SIM.Tool.Windows.Pipelines.Download;
-  using Sitecore.Diagnostics;
-  using Sitecore.Diagnostics.Annotations;
+  using Sitecore.Diagnostics.Base;
+  using Sitecore.Diagnostics.Base.Annotations;
+  using Sitecore.Diagnostics.Logging;
+  using Sitecore.Diagnostics.InformationService.Client.Model;
+  using SIM.Core;
 
   #region
 
@@ -53,7 +56,7 @@
 
     public void CustomButtonClick()
     {
-      WindowHelper.OpenFolder(ProfileManager.Profile.LocalRepository);
+      CoreApp.OpenFolder(ProfileManager.Profile.LocalRepository);
     }
 
     #endregion
@@ -99,7 +102,7 @@
       }
       catch (Exception ex)
       {
-        Log.Error("Error while downloading {0}".FormatWith(url.ToString()), this, ex);
+        Log.Error(ex, "Error while downloading {0}", url.ToString());
       }
     }
 
@@ -142,7 +145,7 @@
       }
       catch (Exception ex)
       {
-        Log.Error("Error while preparing data", this, ex);
+        Log.Error(ex, "Error while preparing data");
       }
     }
 
@@ -184,7 +187,7 @@
     {
       var args = (DownloadWizardArgs)wizardArgs;
       this.checkBoxItems.Clear();
-      this.Append(args.Records);
+      this.Append(args.Releases);
 
       foreach (var product in args.Products)
       {
@@ -203,9 +206,9 @@
 
     #region Private methods
 
-    private void Append(IEnumerable<string> records)
+    private void Append(IEnumerable<IRelease> records)
     {
-      this.checkBoxItems.AddRange(records.Select(f => new ProductDownloadInCheckbox(f)).ToList());
+      this.checkBoxItems.AddRange(records.Select(r => new ProductDownloadInCheckbox(r)).ToList());
     }
 
     private void ModuleSelected([CanBeNull] object sender, [CanBeNull] SelectionChangedEventArgs e)

@@ -10,7 +10,9 @@
   using SIM.Tool.Base;
   using SIM.Tool.Base.Wizards;
   using SIM.Tool.Windows.Pipelines.Setup;
-  using Sitecore.Diagnostics.Annotations;
+  using Sitecore.Diagnostics.Base.Annotations;
+  using Sitecore.Diagnostics.Logging;
+  using SIM.Core;
 
   public partial class Permissions : IWizardStep, IFlowControl
   {
@@ -43,7 +45,7 @@
           return null;
         }
 
-        Log.Debug("SQL Server Account name: " + sqlServerAccountName);
+        Log.Debug("SQL Server Account name: {0}",  sqlServerAccountName);
         return new[]
         {
           sqlServerAccountName, Settings.CoreInstallWebServerIdentity.Value
@@ -107,9 +109,8 @@
       }
       catch (Exception ex)
       {
-        Log.Error("Granting security permissions failed", this, ex);
-        WindowHelper.ShowMessage("Something went wrong while assigning necessary permissions, so please do it manually according to the guide that will be opened.", MessageBoxButton.OK, MessageBoxImage.Asterisk);
-        this.ShowGuide();
+        Log.Error(ex, "Granting security permissions failed");
+        WindowHelper.ShowMessage(string.Format("Something went wrong while assigning necessary permissions, so please assign them manually: grant the \"{0}\" folder with FULL ACCESS rights for {1} user account.", path, accountName), MessageBoxButton.OK, MessageBoxImage.Asterisk);
         return ProfileSection.Result(false);
       }
     }
@@ -162,14 +163,9 @@
       }
       catch (Exception ex)
       {
-        Log.Error("Cannot verify permissions", this, ex);
+        Log.Error(ex, "Cannot verify permissions");
         return true;
       }
-    }
-
-    private void ShowGuide()
-    {
-      WindowHelper.OpenInBrowser("https://bitbucket.org/alienlab/sitecore-instance-manager/wiki/Installation", true);
     }
 
     private bool ValidateAccount(string account)
@@ -183,7 +179,7 @@
           return false;
         }
 
-        WindowHelper.OpenInBrowser("https://bitbucket.org/alienlab/sitecore-instance-manager/wiki/KnownIssue-SqlServerDefaultAccount", true);
+        CoreApp.OpenInBrowser("https://github.com/Sitecore/Sitecore-Instance-Manager/wiki/Troubleshooting", true);
         return false;
       }
 

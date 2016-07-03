@@ -5,8 +5,9 @@
   using System.Configuration;
   using System.IO;
   using System.Linq;
-  using Sitecore.Diagnostics;
-  using Sitecore.Diagnostics.Annotations;
+  using Sitecore.Diagnostics.Base;
+  using Sitecore.Diagnostics.Base.Annotations;
+  using Sitecore.Diagnostics.Logging;
 
   #region
 
@@ -103,7 +104,7 @@
 
     private static string[] GetProductFiles(string localRepository)
     {
-      using (new ProfileSection("Get product files", typeof(ProductManager)))
+      using (new ProfileSection("Get product files"))
       {
         ProfileSection.Argument("localRepository", localRepository);
 
@@ -126,7 +127,7 @@
     {
       Assert.IsNotNullOrEmpty(file, "file");
 
-      using (new ProfileSection("Process file", typeof(ProductManager)))
+      using (new ProfileSection("Process file"))
       {
         ProfileSection.Argument("file", file);
 
@@ -148,12 +149,11 @@
       }
     }
 
-    [CanBeNull]
     private static void Refresh([NotNull] string localRepository)
     {
       Assert.ArgumentNotNull(localRepository, "localRepository");
 
-      using (new ProfileSection("Refresh product manager", typeof(ProductManager)))
+      using (new ProfileSection("Refresh product manager"))
       {
         ProfileSection.Argument("localRepository", localRepository);
 
@@ -166,7 +166,7 @@
           }
           catch (Exception ex)
           {
-            throw new ConfigurationErrorsException(ex.Message, ex);
+            throw new ConfigurationErrorsException(ex.Message);
           }
 
           if (FileSystem.FileSystem.Local.Directory.Exists(localRepository))
@@ -181,7 +181,7 @@
 
     private static void Refresh(IEnumerable<string> zipFiles)
     {
-      using (new ProfileSection("Refresh product manager", typeof(ManifestHelper)))
+      using (new ProfileSection("Refresh product manager"))
       {
         ProfileSection.Argument("zipFiles", zipFiles);
 
@@ -205,5 +205,35 @@
     public static readonly List<Product> Products = new List<Product>();
 
     #endregion
+
+    public static Product FindProduct(ProductType type, string product, string version, string revision)
+    {
+      var products = type == ProductType.Standalone ? ProductManager.StandaloneProducts : ProductManager.Modules;
+      if (!string.IsNullOrEmpty(product))
+      {
+        products = products.Where(x => x.Name.Equals(product, StringComparison.OrdinalIgnoreCase));
+      }
+
+      if (!string.IsNullOrEmpty(version))
+      {
+        products = products.Where(x => x.Version == version);
+      }
+      else
+      {
+        products = products.OrderByDescending(x => x.Version);
+      }
+
+      if (!string.IsNullOrEmpty(revision))
+      {
+        products = products.Where(x => x.Revision == revision);
+      }
+      else
+      {
+        products = products.OrderByDescending(x => x.Revision);
+      }
+
+      var distributive = products.FirstOrDefault();
+      return distributive;
+    }
   }
 }

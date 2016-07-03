@@ -6,8 +6,8 @@
   using System.Windows.Input;
   using SIM.Tool.Base;
   using SIM.Tool.Base.Profiles;
-  using Sitecore.Diagnostics;
-  using Sitecore.Diagnostics.Annotations;
+  using Sitecore.Diagnostics.Base;
+  using Sitecore.Diagnostics.Base.Annotations;
 
   #region
 
@@ -154,11 +154,6 @@
     private void ShowAbout(object sender, RoutedEventArgs e)
     {
       WindowHelper.ShowDialog(new AboutDialog(), this);
-    }
-
-    private void ShowPlugins(object sender, RoutedEventArgs e)
-    {
-      WindowHelper.ShowDialog(new PluginsDialog(), this);
     }
 
     #endregion

@@ -5,8 +5,9 @@
   using System.Diagnostics;
   using System.Linq;
   using Microsoft.Web.Administration;
-  using Sitecore.Diagnostics;
-  using Sitecore.Diagnostics.Annotations;
+  using Sitecore.Diagnostics.Base;
+  using Sitecore.Diagnostics.Base.Annotations;
+  using Sitecore.Diagnostics.Logging;
 
   #region
 
@@ -73,7 +74,7 @@
             }
             catch (Exception ex)
             {
-              Log.Error("Cannot retrieve binding info", this, ex);
+              Log.Error(ex, "Cannot retrieve binding info");
             }
           }
         }
@@ -159,7 +160,6 @@
     {
       get
       {
-        string name;
         using (WebServerManager.WebServerContext context = WebServerManager.CreateContext("Website({0}).Name".FormatWith(this.ID)))
         {
           return this.GetName(context);
@@ -194,6 +194,24 @@
         }
 
         return w;
+      }
+    }
+
+    public bool IsDisabled
+    {
+      get
+      {
+        return this.Name.ToLowerInvariant().EndsWith("_disabled");
+      }
+
+      set
+      {
+        var name = this.Name.TrimEnd("_disabled");
+        using (WebServerManager.WebServerContext context = WebServerManager.CreateContext("Website({0}).Name".FormatWith(this.ID)))
+        {
+          context.Sites[name].Name = name + "_disabled";
+          context.CommitChanges();
+        }
       }
     }
 
@@ -250,7 +268,7 @@
 
     public virtual void Recycle()
     {
-      Log.Info("Recycle the {0} instance's application pool".FormatWith(this.Name), this);
+      Log.Info("Recycle the {0} instance's application pool", this.Name);
 
       using (WebServerManager.WebServerContext context = WebServerManager.CreateContext("Website.Recycle"))
       {
@@ -265,9 +283,14 @@
 
     public virtual void Start()
     {
-      Log.Info("Starting website {0}".FormatWith(this.ID), this);
+      Log.Info("Starting website {0}", this.ID);
+      
+      if (IsDisabled)
+      {
+        throw new InvalidOperationException("The {0} website is disabled. Open IIS Manager and remove _disabled suffix from its name in order to enable the website.");
+      }
 
-      using (WebServerManager.WebServerContext context = WebServerManager.CreateContext("Website.Start"))
+      using (WebServerManager.WebServerContext context = WebServerManager.CreateContext("Website.Start.Pool"))
       {
         Site site = this.GetSite(context);
         Assert.IsNotNull(site, "Site is missing");
@@ -280,7 +303,7 @@
         }
       }
 
-      using (WebServerManager.WebServerContext context = WebServerManager.CreateContext("Website.Start"))
+      using (WebServerManager.WebServerContext context = WebServerManager.CreateContext("Website.Start.Site"))
       {
         Site site = this.GetSite(context);
         Assert.IsNotNull(site, "Site is missing");
@@ -292,15 +315,15 @@
       }
     }
 
-    public virtual void Stop(bool force = false)
+    public virtual void Stop(bool? force = null)
     {
-      Log.Info("Stop website {0} ({1})".FormatWith(this.Name, this.ID), this);
+      Log.Info("Stop website {0} ({1})", this.Name, this.ID);
 
       using (WebServerManager.WebServerContext context = WebServerManager.CreateContext("Website.Stop"))
       {
         ApplicationPool pool = this.GetPool(context);
 
-        if (force)
+        if (force ?? false)
         {
           foreach (WorkerProcess workerProcess in pool.WorkerProcesses)
           {
@@ -311,7 +334,7 @@
             }
             catch (Exception ex)
             {
-              Log.Warn("Stop website {0} ({1}) failed".FormatWith(this.Name, this.ID), this, ex);
+              Log.Warn(ex, "Stop website {0} ({1}) failed", this.Name, this.ID);
             }
           }
         }
@@ -326,7 +349,7 @@
 
     public virtual void StopApplicationPool()
     {
-      Log.Info("Stop app pool {0} ({1})".FormatWith(this.Name, this.ID), this);
+      Log.Info("Stop app pool {0} ({1})", this.Name, this.ID);
 
       using (WebServerManager.WebServerContext context = WebServerManager.CreateContext("Website.StopApplicationPool"))
       {

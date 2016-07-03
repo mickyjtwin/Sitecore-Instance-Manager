@@ -1,7 +1,7 @@
-﻿using System.IO;
-
-namespace SIM
+﻿namespace SIM
 {
+  using System.IO;
+
   public class XmlBasedAdvancedSettingsStorage : IAdvancedSettingsStorage
   {
     #region Fields
@@ -30,7 +30,7 @@ namespace SIM
     {
       if (!FileSystem.FileSystem.Local.File.Exists(this.FilePath))
       {
-        FileSystem.FileSystem.Local.File.WriteAllText(this.FilePath, @"<settings version=""1.3"" />");
+        FileSystem.FileSystem.Local.File.WriteAllText(this.FilePath, @"<settings version=""1.4"" />");
       }
 
       this.UnderlyingDocument = XmlDocumentEx.LoadFile(this.FilePath);

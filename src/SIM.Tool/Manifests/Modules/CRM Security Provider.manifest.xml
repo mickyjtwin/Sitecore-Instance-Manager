@@ -1,0 +1,5 @@
+<manifest version="1.4">
+  <package>
+    <name>Sitecore CRM Security Provider</name>    
+  </package>
+</manifest>

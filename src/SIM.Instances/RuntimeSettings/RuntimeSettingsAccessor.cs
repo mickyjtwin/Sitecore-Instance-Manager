@@ -6,8 +6,9 @@
   using SIM.Adapters.MongoDb;
   using SIM.Adapters.SqlServer;
   using SIM.Adapters.WebServer;
-  using Sitecore.Diagnostics.Annotations;
+  using Sitecore.Diagnostics.Base.Annotations;
   using Sitecore.Diagnostics.ConfigBuilder;
+  using Sitecore.Diagnostics.Logging;
 
   public class RuntimeSettingsAccessor
   {

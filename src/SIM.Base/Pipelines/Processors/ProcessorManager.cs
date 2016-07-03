@@ -4,8 +4,9 @@
   using System.Collections.Generic;
   using System.Linq;
   using System.Xml;
-  using Sitecore.Diagnostics;
-  using Sitecore.Diagnostics.Annotations;
+  using Sitecore.Diagnostics.Base;
+  using Sitecore.Diagnostics.Base.Annotations;
+  using Sitecore.Diagnostics.Logging;
 
   #region
 
@@ -60,16 +61,18 @@
 
       return list.Sum(item =>
       {
+        long itemStepsCount = 1;
         try
         {
-          return item.EvaluateStepsCount(args);
+          itemStepsCount = item.EvaluateStepsCount(args);
         }
         catch (Exception ex)
         {
-          Log.Error("Error during evaluating steps count of " + item.GetType().FullName, typeof(ProcessorManager), ex);
-          return 1;
+          Log.Error(ex, "Error during evaluating steps count of {0}",  item.GetType().FullName);
         }
-      }) + list.Sum(q => GetProcessorsCount(args, q.NestedProcessors));
+
+        return itemStepsCount + GetProcessorsCount(args, item.NestedProcessors);
+      });
     }
 
     #endregion
@@ -94,7 +97,7 @@
           }
           catch (Exception ex)
           {
-            Log.Warn("Cannot detect if the processor {0} requires processing".FormatWith(processor.ProcessorDefinition.Type), typeof(ProcessorManager), ex);
+            Log.Warn(ex, "Cannot detect if the processor {0} requires processing", processor.ProcessorDefinition.Type);
           }
 
           if (isRequireProcessing)

@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.IO;
-using Sitecore.Diagnostics;
-using Sitecore.Diagnostics.Annotations;
+using Sitecore.Diagnostics.Base;
+using Sitecore.Diagnostics.Base.Annotations;
 
 namespace SIM.FileSystem
 {
@@ -336,20 +336,6 @@ namespace SIM.FileSystem
         newPath = this.fileSystem.Path.ToUncPath(newPath);
 
         base.Move(path, newPath);
-      }
-    }
-
-    public override void MoveChild(DirectoryInfo extracted, string childName, string targetFolder)
-    {
-      try
-      {
-        base.MoveChild(extracted, childName, targetFolder);
-      }
-      catch (PathTooLongException)
-      {
-        targetFolder = this.fileSystem.Path.ToUncPath(targetFolder);
-
-        base.MoveChild(extracted, childName, targetFolder);
       }
     }
 

@@ -9,8 +9,13 @@
   using SIM.Tool.Base;
   using SIM.Tool.Base.Profiles;
   using SIM.Tool.Base.Wizards;
-  using Sitecore.Diagnostics.Annotations;
+  using Sitecore.Diagnostics.Base;
+  using Sitecore.Diagnostics.Base.Annotations;
+  using Sitecore.Diagnostics.InformationService.Client.Model;
+  using Sitecore.Diagnostics.Logging;
+  using SIM.Core;
 
+  [UsedImplicitly]
   public partial class Downloads : IWizardStep, ICustomButton, IFlowControl
   {
     #region Fields
@@ -46,7 +51,7 @@
 
     public void CustomButtonClick()
     {
-      WindowHelper.OpenFolder(ProfileManager.Profile.LocalRepository);
+      CoreApp.OpenFolder(ProfileManager.Profile.LocalRepository);
     }
 
     #endregion
@@ -80,7 +85,7 @@
 
     private ReadOnlyCollection<Uri> GetLinks(DownloadWizardArgs args)
     {
-      return new ReadOnlyCollection<Uri>(args.Products.SelectMany(product => product.Value).ToArray());
+      return new ReadOnlyCollection<Uri>(args.Products.Select(product => product.Value).ToArray());
     }
 
     private void PrepareData(DownloadWizardArgs args)
@@ -92,7 +97,7 @@
       }
       catch (Exception ex)
       {
-        Log.Error("Error while preparing data", this, ex);
+        Log.Error(ex, "Error while preparing data");
       }
     }
 
@@ -101,13 +106,6 @@
     #endregion
 
     #region IStateControl Members
-
-    #region Public properties
-
-    public static WebBrowser WebBrowser { get; private set; }
-    public WizardArgs WizardArgs { get; set; }
-
-    #endregion
 
     #region Public methods
 
@@ -134,7 +132,7 @@
     {
       var args = (DownloadWizardArgs)wizardArgs;
       this.checkBoxItems.Clear();
-      this.Append(args.Records);
+      this.Append(args.Releases);
 
       foreach (var product in args.Products)
       {
@@ -153,9 +151,11 @@
 
     #region Private methods
 
-    private void Append(IEnumerable<string> records)
+    private void Append([NotNull] IEnumerable<IRelease> records)
     {
-      this.checkBoxItems.AddRange(records.Select(f => new ProductDownload8InCheckbox(f)).ToList());
+      Assert.ArgumentNotNull(records, "records");
+
+      this.checkBoxItems.AddRange(records.Select(r => new ProductDownload8InCheckbox(r)).ToList());
     }
 
     private void ModuleSelected([CanBeNull] object sender, [CanBeNull] SelectionChangedEventArgs e)

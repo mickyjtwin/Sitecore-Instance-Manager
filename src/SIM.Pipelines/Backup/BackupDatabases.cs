@@ -3,8 +3,9 @@
   using System.IO;
   using System.Linq;
   using SIM.Adapters.SqlServer;
-  using Sitecore.Diagnostics;
-  using Sitecore.Diagnostics.Annotations;
+  using Sitecore.Diagnostics.Base;
+  using Sitecore.Diagnostics.Base.Annotations;
+  using Sitecore.Diagnostics.Logging;
 
   [UsedImplicitly]
   public class BackupDatabases : BackupProcessor
@@ -57,7 +58,7 @@
       {
         var databaseName = database.RealName;
         var fileName = Path.Combine(folder, database.BackupFilename);
-        Log.Info("Backing up the '{0}' database to the '{1}' file".FormatWith(databaseName, fileName), this);
+        Log.Info("Backing up the '{0}' database to the '{1}' file", databaseName, fileName);
 
         var command = "BACKUP DATABASE [" + databaseName + "] TO  DISK = N'" + fileName +
                       "' WITH NOFORMAT, NOINIT,  NAME = N'" + databaseName +

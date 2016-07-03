@@ -3,12 +3,15 @@
   using System;
   using System.Collections.Generic;
   using System.Collections.ObjectModel;
+  using System.Linq;
   using SIM.Pipelines.Processors;
+  using SIM.Products;
   using SIM.Tool.Base.Profiles;
   using SIM.Tool.Base.Wizards;
   using SIM.Tool.Windows.Pipelines.Download8;
-  using Sitecore.Diagnostics;
-  using Sitecore.Diagnostics.Annotations;
+  using Sitecore.Diagnostics.Base;
+  using Sitecore.Diagnostics.Base.Annotations;
+  using Sitecore.Diagnostics.InformationService.Client.Model;
 
   public class DownloadWizardArgs : WizardArgs
   {
@@ -53,7 +56,17 @@
       }
     }
 
-    public string[] Records { get; set; }
+    [CanBeNull]
+    public IRelease[] Releases
+    {
+      get
+      {
+        return Product.Service.GetVersions("Sitecore CMS")
+          .With(x => x.Where(z => z.Name.StartsWith("8")))
+          .With(x => x.SelectMany(y => y.Releases).ToArray());
+      }
+    }
+
     public string UserName { get; set; }
 
     #endregion

@@ -1,3 +1,5 @@
+*.user
+*.suo
 src/packages/
 src/TestResults/
 src/SIM.Tool/obj/
@@ -22,3 +24,14 @@ src/SIM.Adapters/obj/
 src/SIM.Adapters/bin/
 src/SIM.Base/obj/
 src/SIM.Base/bin/
+src/obj/
+src/SIM.Client.Tests/bin/
+src/SIM.Client.Tests/obj/
+src/SIM.Client/bin/
+src/SIM.Client/obj/
+src/SIM.Core/obj/
+src/SIM.Core/bin/
+obj/
+*.pfx
+desktop.ini
+*.tmp_proj

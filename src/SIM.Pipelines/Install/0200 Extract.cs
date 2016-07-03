@@ -1,8 +1,8 @@
 ﻿namespace SIM.Pipelines.Install
 {
   using SIM.Pipelines.Processors;
-  using Sitecore.Diagnostics;
-  using Sitecore.Diagnostics.Annotations;
+  using Sitecore.Diagnostics.Base;
+  using Sitecore.Diagnostics.Base.Annotations;
 
   #region
 
@@ -17,26 +17,24 @@
     {
       Assert.ArgumentNotNull(args, "args");
 
-      return FileSystem.FileSystem.Local.File.GetFileLength(((InstallArgs)args).PackagePath);
+      return InstallHelper.GetStepsCount(((InstallArgs)args).PackagePath);
     }
 
     #endregion
 
     #region Methods
 
-    protected override void Process([NotNull] InstallArgs args)
+    protected override void Process(InstallArgs args)
     {
       Assert.ArgumentNotNull(args, "args");
+      var packagePath = args.PackagePath;
 
-      var ignore = Settings.CoreInstallRadControls.Value ? null : "Website/sitecore/shell/RadControls";
-      var controller = this.Controller;
-      if (controller != null)
-      {
-        FileSystem.FileSystem.Local.Zip.UnpackZip(args.PackagePath, args.UniqueTempFolder, controller.IncrementProgress, ignore);
-        return;
-      }
+      var webRootPath = args.WebRootPath;
+      var databasesFolderPath = args.DatabasesFolderPath;
+      var dataFolderPath = args.DataFolderPath;
 
-      FileSystem.FileSystem.Local.Zip.UnpackZip(args.PackagePath, args.UniqueTempFolder, null, ignore);
+
+      InstallHelper.ExtractFile(packagePath, webRootPath, databasesFolderPath, dataFolderPath, args.InstallRadControls, args.InstallDictionaries, this.Controller);
     }
 
     #endregion

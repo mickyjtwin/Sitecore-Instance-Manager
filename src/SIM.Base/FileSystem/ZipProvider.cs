@@ -5,11 +5,13 @@ using System.IO;
 using System.Linq;
 using Ionic.Zip;
 using Ionic.Zlib;
-using Sitecore.Diagnostics;
-using Sitecore.Diagnostics.Annotations;
+using Sitecore.Diagnostics.Base;
+using Sitecore.Diagnostics.Base.Annotations;
 
 namespace SIM.FileSystem
 {
+  using Sitecore.Diagnostics.Logging;
+
   public class ZipProvider
   {
     #region Constants
@@ -129,77 +131,6 @@ namespace SIM.FileSystem
       return null;
     }
 
-    public virtual void UnpackZip([NotNull] string packagePath, [NotNull] string path, [CanBeNull] Action<long> incrementProgress, string ignore1 = null, string ignore2 = null)
-    {
-      Assert.ArgumentNotNull(packagePath, "packagePath");
-      Assert.ArgumentNotNull(path, "path");
-
-      if (System.IO.File.Exists(packagePath))
-      {
-        try
-        {
-          Log.Info("Unzipping the '{0}' archive to the '{1}' folder".FormatWith(packagePath, path), typeof(FileSystem));
-
-          using (ZipFile zip = new ZipFile(packagePath))
-          {
-            this.fileSystem.Directory.Ensure(path);
-            const long minAmountRequiredBytesToUpdateProgress = 1 * MB;
-            long lastEntriesTotalSizes = 0;
-            foreach (ZipEntry entry in zip.Entries)
-            {
-              try
-              {
-                if (ignore1 != null && entry.FileName.ContainsIgnoreCase(ignore1))
-                {
-                  continue;
-                }
-
-                if (ignore2 != null && entry.FileName.ContainsIgnoreCase(ignore2))
-                {
-                  continue;
-                }
-
-                entry.Extract(path, ExtractExistingFileAction.OverwriteSilently);
-                lastEntriesTotalSizes += entry.CompressedSize;
-                if (lastEntriesTotalSizes > minAmountRequiredBytesToUpdateProgress)
-                {
-                  incrementProgress(lastEntriesTotalSizes);
-                  lastEntriesTotalSizes = 0;
-                }
-              }
-              catch (IOException)
-              {
-                bool b = false;
-                foreach (string postFix in new[]
-                {
-                  ".tmp", ".PendingOverwrite"
-                })
-                {
-                  string errorPath = Path.Combine(path, entry.FileName) + postFix;
-                  if (System.IO.File.Exists(errorPath))
-                  {
-                    System.IO.File.Delete(errorPath);
-                    b = true;
-                  }
-                }
-
-                if (!b)
-                {
-                  throw;
-                }
-
-                entry.Extract(path, ExtractExistingFileAction.OverwriteSilently);
-              }
-            }
-          }
-        }
-        catch (ZipException)
-        {
-          throw new InvalidOperationException(string.Format("The \"{0}\" package seems to be corrupted.", packagePath));
-        }
-      }
-    }
-
     public virtual void UnpackZip([NotNull] string packagePath, [NotNull] string path, 
       [CanBeNull] string entriesPattern = null, int stepsCount = 1, 
       [CanBeNull] Action incrementProgress = null, bool skipErrors = false)
@@ -215,12 +146,14 @@ namespace SIM.FileSystem
       {
         try
         {
-          Log.Info(
-            "Unzipping {2}the '{0}' archive to the '{1}' folder".FormatWith(packagePath, path, 
-              entriesPattern != null
-                ? "\"" + entriesPattern + "\"" +
-                  " files of "
-                : string.Empty), typeof(FileSystem));
+          if (entriesPattern != null)
+          {
+            Log.Info("Unzipping the {2} entries of the '{0}' archive to the '{1}' folder", packagePath, path, entriesPattern);
+          }
+          else 
+          {
+            Log.Info("Unzipping the '{0}' archive to the '{1}' folder", packagePath, path);
+          }
 
           using (ZipFile zip = new ZipFile(packagePath))
           {
@@ -239,7 +172,7 @@ namespace SIM.FileSystem
               {
                 if (skipErrors)
                 {
-                  Log.Error("Unpacking caused exception", ex);
+                  Log.Error(ex, "Unpacking caused exception");
                   continue;
                 }
 
@@ -268,7 +201,7 @@ namespace SIM.FileSystem
               {
                 if (skipErrors)
                 {
-                  Log.Error("Unpacking caused exception", ex);
+                  Log.Error(ex, "Unpacking caused exception");
                   continue;
                 }
               }
@@ -307,7 +240,14 @@ namespace SIM.FileSystem
 
       try
       {
-        Log.Info("Unzipping {2}the '{0}' archive to the '{1}' folder".FormatWith(packagePath, path, entriesPattern != null ? "\"" + entriesPattern + "\"" + " files of " : string.Empty), typeof(FileSystem));
+        if (entriesPattern != null)
+        {
+          Log.Info("Unzipping the {2} entries of the '{0}' archive to the '{1}' folder", packagePath, path, entriesPattern);
+        }
+        else
+        {
+          Log.Info("Unzipping the '{0}' archive to the '{1}' folder", packagePath, path);
+        }
 
         using (var zip = new ZipFile(packagePath))
         {

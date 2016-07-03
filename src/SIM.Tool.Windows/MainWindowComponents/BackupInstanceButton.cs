@@ -1,11 +1,12 @@
 ﻿namespace SIM.Tool.Windows.MainWindowComponents
 {
   using System.Windows;
+  using SIM.Core.Common;
   using SIM.Instances;
   using SIM.Pipelines.Backup;
   using SIM.Tool.Base.Plugins;
-  using SIM.Tool.Wizards;
-  using Sitecore.Diagnostics.Annotations;
+  using Sitecore.Diagnostics.Base.Annotations;
+  using SIM.Tool.Base.Wizards;
 
   [UsedImplicitly]
   public class BackupInstanceButton : IMainWindowButton
@@ -19,6 +20,8 @@
 
     public void OnClick(Window mainWindow, Instance instance)
     {
+      Analytics.TrackEvent("Backup");
+
       if (instance != null)
       {
         var id = MainWindowHelper.GetListItemID(instance.ID);

@@ -3,11 +3,13 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
-using Sitecore.Diagnostics;
-using Sitecore.Diagnostics.Annotations;
+using Sitecore.Diagnostics.Base;
+using Sitecore.Diagnostics.Base.Annotations;
 
 namespace SIM.FileSystem
 {
+  using Sitecore.Diagnostics.Logging;
+
   public class DirectoryProvider
   {
     #region Fields
@@ -83,7 +85,7 @@ namespace SIM.FileSystem
     {
       // TODO: Refactor this to edit attributes only on problem files and folders
       Assert.ArgumentNotNull(path, "path");
-      Log.Info("Deleting file or folder: {0}".FormatWith(path), typeof(FileSystem));
+      Log.Info("Deleting file or folder: {0}", path);
 
       if (!string.IsNullOrEmpty(path))
       {
@@ -105,7 +107,7 @@ namespace SIM.FileSystem
           }
           catch (Exception ex)
           {
-            Log.Warn("Failed to delete {0} folder, altering attributes and trying again".FormatWith(path), typeof(FileSystem), ex);
+            Log.Warn(ex, "Failed to delete {0} folder, altering attributes and trying again", path);
             Thread.Sleep(100);
             foreach (var fileSystemInfo in directoryInfo.GetFileSystemInfos("*", SearchOption.AllDirectories))
             {
@@ -188,7 +190,7 @@ namespace SIM.FileSystem
 
       if (!Directory.Exists(folder))
       {
-        Log.Info("Creating folder {0}".FormatWith(folder), typeof(FileSystem));
+        Log.Info("Creating folder {0}", folder);
         Directory.CreateDirectory(folder);
       }
 
@@ -387,23 +389,6 @@ namespace SIM.FileSystem
       Directory.Move(path, newPath);
     }
 
-    public virtual void MoveChild([NotNull] DirectoryInfo extracted, [NotNull] string childName, 
-      [NotNull] string targetFolder)
-    {
-      Assert.ArgumentNotNull(extracted, "extracted");
-      Assert.ArgumentNotNullOrEmpty(childName, "childName");
-      Assert.ArgumentNotNullOrEmpty(targetFolder, "targetFolder");
-      Log.Info(
-        "Moving the '{0}' file to the '{1}' folder".FormatWith(Path.Combine(extracted.FullName, childName), targetFolder), 
-        typeof(FileSystem));
-
-      DirectoryInfo source = this.GetChild(extracted, childName);
-      DirectoryInfo parent = new DirectoryInfo(targetFolder).Parent;
-      Assert.IsNotNull(parent, "parent");
-      this.Ensure(parent.FullName);
-      source.MoveTo(targetFolder);
-    }
-
     public string RegisterTempFolder(string tempFolderPath)
     {
       var tempFoldersCacheFilePath = Path.Combine(ApplicationManager.TempFolder, "tempFolders.txt");
@@ -425,7 +410,7 @@ namespace SIM.FileSystem
       }
       catch (Exception ex)
       {
-        Log.Warn("Cannot delete the {0} file. {1}".FormatWith(path, ex.Message), typeof(FileSystem), ex);
+        Log.Warn(ex, "Cannot delete the {0} file. {1}", path, ex.Message);
       }
     }
 

@@ -1,8 +1,7 @@
 ﻿namespace SIM.Pipelines.Import
 {
   using SIM.Adapters.WebServer;
-  using SIM.Pipelines.Install;
-  using Sitecore.Diagnostics.Annotations;
+  using Sitecore.Diagnostics.Base.Annotations;
 
   [UsedImplicitly]
   internal class ImportInitialization : ImportProcessor
