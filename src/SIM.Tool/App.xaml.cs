@@ -212,23 +212,22 @@ namespace SIM.Tool
         WindowHelper.HandleError("Main window caused unhandled exception", true, ex);
       }
 
-    private static void LoadIocResourcesForSolr()
-    {
-
-      if (!Directory.Exists("IOC_Containers"))
-      {
-        Log.Info("Copying IOC dlls", typeof (App));
-        ApplicationManager.GetEmbeddedApp("IOC_Containers.zip", "SIM.Tool", "IOC_Containers");
-      }
-    }
-
-
 
       CoreApp.Exit();
 
       Analytics.Flush();
 
       Environment.Exit(0);
+    }
+
+    private static void LoadIocResourcesForSolr()
+    {
+
+      if (!Directory.Exists("IOC_Containers"))
+      {
+        Log.Info("Copying IOC dlls", typeof(App));
+        ApplicationManager.GetEmbeddedFile("IOC_Containers.zip", "SIM.Pipelines", "IOC_Containers");
+      }
     }
 
     private static bool EnsureSingleProcess(string[] args)

@@ -910,6 +910,14 @@ namespace SIM.Pipelines
             break;
           }
 
+          case "custom":
+          {
+            var typeName = action.GetAttribute("type").EmptyToNull().IsNotNull("The type attribute is missing in the <custom> install action");
+            var obj = (IPackageInstallActions)ReflectionUtil.CreateObject(typeName);
+            obj.Execute(instance, module);
+            break;
+          }
+
           case "sql":
           {
             var db = action.GetAttribute("database");

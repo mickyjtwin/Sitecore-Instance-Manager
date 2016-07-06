@@ -475,7 +475,6 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="IOC_Containers.zip" />
     <Resource Include="Images\splash.png" />
     <Resource Include="Manifests\readme.txt" />
   </ItemGroup>
